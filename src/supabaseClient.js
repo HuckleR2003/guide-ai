@@ -8,7 +8,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        storageKey: 'guideai-auth',
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    })
   : null;
 
 // ═══════════════════════════════════════════════════════════════
@@ -75,6 +82,51 @@ export const getProfile = async (userId) => {
     .single();
 
   return { data, error };
+};
+
+// Creates profile if not exists, returns existing profile if it does
+export const createOrGetProfile = async (user) => {
+  if (!supabase || !user) return { data: null, error: { message: 'Supabase not configured' } };
+
+  // First try to get existing profile
+  const { data: existingProfile, error: fetchError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  // If profile exists, return it
+  if (existingProfile) {
+    return { data: existingProfile, error: null };
+  }
+
+  // If no profile exists (PGRST116 = no rows), create one
+  if (fetchError && fetchError.code === 'PGRST116') {
+    const newProfile = {
+      id: user.id,
+      email: user.email,
+      full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+      avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+      plan_type: 'free',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: createdProfile, error: createError } = await supabase
+      .from('profiles')
+      .insert(newProfile)
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('Error creating profile:', createError);
+      return { data: null, error: createError };
+    }
+
+    return { data: createdProfile, error: null };
+  }
+
+  return { data: null, error: fetchError };
 };
 
 export const updateProfile = async (userId, updates) => {

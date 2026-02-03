@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase, getProfile } from './supabaseClient';
+import { supabase, createOrGetProfile } from './supabaseClient';
 
 const AuthContext = createContext();
 
@@ -16,6 +16,25 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch or create profile for user
+  const loadProfile = async (currentUser) => {
+    if (!currentUser) {
+      setProfile(null);
+      return;
+    }
+
+    try {
+      const { data: profileData, error } = await createOrGetProfile(currentUser);
+      if (error) {
+        console.error('Profile error:', error);
+      }
+      setProfile(profileData);
+    } catch (err) {
+      console.error('Failed to load profile:', err);
+      setProfile(null);
+    }
+  };
+
   useEffect(() => {
     if (!supabase) {
       setLoading(false);
@@ -26,11 +45,11 @@ export const AuthProvider = ({ children }) => {
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
 
-        if (session?.user) {
-          const { data: profileData } = await getProfile(session.user.id);
-          setProfile(profileData);
+        if (currentUser) {
+          await loadProfile(currentUser);
         }
       } catch (error) {
         console.error('Auth init error:', error);
@@ -43,18 +62,15 @@ export const AuthProvider = ({ children }) => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null);
+      console.log('Auth event:', event);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
 
-      if (session?.user) {
-        const { data: profileData } = await getProfile(session.user.id);
-        setProfile(profileData);
+      if (currentUser) {
+        // Create profile on sign up/sign in
+        await loadProfile(currentUser);
       } else {
         setProfile(null);
-      }
-
-      // Handle email confirmation
-      if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
-        // User confirmed their email
       }
     });
 
@@ -70,8 +86,7 @@ export const AuthProvider = ({ children }) => {
     planType: profile?.plan_type || 'free',
     refreshProfile: async () => {
       if (user) {
-        const { data } = await getProfile(user.id);
-        setProfile(data);
+        await loadProfile(user);
       }
     },
   };
