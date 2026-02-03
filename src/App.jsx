@@ -919,7 +919,7 @@ const InteractiveDemo = React.forwardRef(({
 
       setSavedToDb(true);
       setShowSavedMessage(true);
-      setTimeout(() => setShowSavedMessage(false), 3000);
+      setTimeout(() => setShowSavedMessage(false), 6000);
     } catch (err) {
       console.error('Failed to save device:', err);
       alert(lang === 'pl' ? 'Nie udało się zapisać urządzenia.' : 'Failed to save device.');
@@ -1103,7 +1103,14 @@ const InteractiveDemo = React.forwardRef(({
                           )}
                         </button>
 
-                        {showSavedMessage && <div className="mt-3 text-xs text-green-600 bg-green-100 px-3 py-1.5 rounded-full animate-pulse">✓ {lang === 'pl' ? 'Zapisano!' : 'Saved!'}</div>}
+                        {showSavedMessage && (
+                          <div className={`mt-3 text-xs px-3 py-2 rounded-lg ${darkMode ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'}`}>
+                            <span className="font-medium">✓ {lang === 'pl' ? 'Zapisano!' : 'Saved!'}</span>
+                            <a href="#/dashboard" className="ml-2 underline hover:no-underline">
+                              {lang === 'pl' ? 'Zobacz w panelu →' : 'View in dashboard →'}
+                            </a>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -2124,7 +2131,7 @@ function GuideAIInner() {
       window.location.hash = '';
       return null;
     }
-    return <Dashboard onOpenChat={handleOpenChatFromDashboard} lang={lang} />;
+    return <Dashboard onOpenChat={handleOpenChatFromDashboard} lang={lang} darkMode={darkMode} />;
   }
 
   return (
