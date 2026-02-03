@@ -1,4 +1,4 @@
-# GuideAI by HCK_Labs 🤖📱
+# GuideAI by HCK_Labs
 
 **Turn unreadable PDF manuals into instant AI conversations via QR codes.**
 
