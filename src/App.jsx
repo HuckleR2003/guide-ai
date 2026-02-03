@@ -1554,6 +1554,51 @@ const Pricing = ({ onEarlyAccess }) => {
             </button>
           </div>
         </div>
+
+        {/* Trust Badges */}
+        <div className={`mt-8 pt-6 border-t ${darkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10">
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
+                <Check className="w-4 h-4 text-green-500" />
+              </div>
+              <div>
+                <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {lang === 'pl' ? '7 dni za darmo' : '7-day free trial'}
+                </p>
+                <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                  {lang === 'pl' ? 'Bez karty kredytowej' : 'No credit card'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
+                <Check className="w-4 h-4 text-blue-500" />
+              </div>
+              <div>
+                <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {lang === 'pl' ? 'Anuluj kiedy chcesz' : 'Cancel anytime'}
+                </p>
+                <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                  {lang === 'pl' ? 'Bez zobowiązań' : 'No commitment'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
+                <Sparkles className="w-4 h-4 text-amber-500" />
+              </div>
+              <div>
+                <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {lang === 'pl' ? '99.9% uptime' : '99.9% uptime'}
+                </p>
+                <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                  {lang === 'pl' ? 'Gwarancja SLA' : 'SLA guarantee'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -1664,32 +1709,106 @@ const EarlyAccessModal = ({ isOpen, onClose }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// FAQ COMPONENT
+// HOW IT WORKS COMPONENT
+// ═══════════════════════════════════════════════════════════════
+const HowItWorks = () => {
+  const { darkMode, lang } = useApp();
+
+  const steps = lang === 'pl' ? [
+    { num: '1', title: 'Wgraj instrukcję PDF', desc: 'Przeciągnij i upuść instrukcję obsługi lub dokumentację techniczną.' },
+    { num: '2', title: 'AI analizuje treść', desc: 'Nasza AI przetwarza dokument i uczy się odpowiadać na pytania.' },
+    { num: '3', title: 'Udostępnij kod QR', desc: 'Klienci skanują QR i natychmiast uzyskują odpowiedzi od AI.' },
+  ] : [
+    { num: '1', title: 'Upload your PDF manual', desc: 'Drag and drop your product manual or technical documentation.' },
+    { num: '2', title: 'AI analyzes content', desc: 'Our AI processes the document and learns to answer questions.' },
+    { num: '3', title: 'Share your QR code', desc: 'Customers scan QR and instantly get AI-powered answers.' },
+  ];
+
+  return (
+    <section className={`px-6 py-16 ${darkMode ? 'bg-slate-800/30' : 'bg-gradient-to-b from-white to-slate-50'}`}>
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-10">
+          <h3 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            {lang === 'pl' ? 'Jak to działa?' : 'How it works'}
+          </h3>
+          <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            {lang === 'pl' ? 'Trzy proste kroki do AI-asystenta' : 'Three simple steps to your AI assistant'}
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {steps.map((step, i) => (
+            <div key={i} className="relative">
+              {/* Connector line */}
+              {i < steps.length - 1 && (
+                <div className={`hidden md:block absolute top-8 left-[60%] w-[80%] h-0.5 ${darkMode ? 'bg-gradient-to-r from-blue-500/50 to-transparent' : 'bg-gradient-to-r from-blue-300 to-transparent'}`} />
+              )}
+
+              <div className={`relative p-6 rounded-2xl transition-all hover:scale-[1.02] ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200 shadow-sm'}`}>
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold mb-4 ${darkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+                  {step.num}
+                </div>
+                <h4 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>{step.title}</h4>
+                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{step.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// FAQ COMPONENT (with accordion)
 // ═══════════════════════════════════════════════════════════════
 const FAQ = () => {
   const { darkMode, lang } = useApp();
+  const [openIndex, setOpenIndex] = useState(null);
 
   const faqs = lang === 'pl' ? [
     { q: 'Jak działa darmowy okres próbny?', a: 'Pełny dostęp przez 7 dni. Bez karty kredytowej. Jeśli nie subskrybujesz, konto automatycznie się pauzuje.' },
     { q: 'Co liczy się jako "zapytanie"?', a: 'Każde pytanie, które klient zadaje Twojemu asystentowi AI. Wiadomości w tej samej sesji liczą się jako jedno zapytanie.' },
     { q: 'Czy mogę zmienić plan później?', a: 'Tak. Możesz zmienić plan w dowolnym momencie z panelu. Zmiany obowiązują natychmiast z proporcjonalnym rozliczeniem.' },
+    { q: 'Jakie formaty plików obsługujecie?', a: 'Obecnie obsługujemy pliki PDF. Wkrótce dodamy wsparcie dla DOCX, TXT i stron internetowych.' },
+    { q: 'Czy moje dane są bezpieczne?', a: 'Tak. Używamy szyfrowania end-to-end. Twoje dokumenty są przetwarzane bezpiecznie i nie są udostępniane osobom trzecim.' },
+    { q: 'Czy mogę używać własnego brandingu?', a: 'Tak, w planie Business możesz dostosować wygląd asystenta, w tym logo, kolory i domenę.' },
   ] : [
     { q: 'How does the free trial work?', a: 'Full access for 7 days. No credit card required. If you don\'t subscribe, your account pauses automatically.' },
     { q: 'What counts as a "query"?', a: 'Each question a customer asks your AI assistant. Follow-up messages in the same session count as one query.' },
     { q: 'Can I change plans later?', a: 'Yes. Upgrade or downgrade anytime from your dashboard. Changes apply immediately with prorated billing.' },
+    { q: 'What file formats do you support?', a: 'Currently we support PDF files. We\'re adding support for DOCX, TXT, and web pages soon.' },
+    { q: 'Is my data secure?', a: 'Yes. We use end-to-end encryption. Your documents are processed securely and never shared with third parties.' },
+    { q: 'Can I use my own branding?', a: 'Yes, on the Business plan you can customize the assistant appearance including logo, colors, and domain.' },
   ];
 
   return (
-    <section className={`px-6 py-12 ${darkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+    <section className={`px-6 py-16 ${darkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
       <div className="max-w-3xl mx-auto">
-        <h3 className={`text-xl font-bold text-center mb-6 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-          {lang === 'pl' ? 'Częste pytania' : 'Common questions'}
-        </h3>
-        <div className="space-y-4">
+        <div className="text-center mb-8">
+          <h3 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            {lang === 'pl' ? 'Często zadawane pytania' : 'Frequently asked questions'}
+          </h3>
+          <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            {lang === 'pl' ? 'Wszystko co musisz wiedzieć' : 'Everything you need to know'}
+          </p>
+        </div>
+        <div className="space-y-3">
           {faqs.map((faq, i) => (
-            <div key={i} className={`p-4 rounded-xl ${darkMode ? 'bg-slate-800' : 'bg-white border border-slate-200'}`}>
-              <h4 className={`font-medium mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>{faq.q}</h4>
-              <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{faq.a}</p>
+            <div
+              key={i}
+              className={`rounded-xl overflow-hidden transition-all ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'}`}
+            >
+              <button
+                onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                className={`w-full p-4 flex items-center justify-between text-left transition-colors ${darkMode ? 'hover:bg-slate-750' : 'hover:bg-slate-50'}`}
+              >
+                <h4 className={`font-medium pr-4 ${darkMode ? 'text-white' : 'text-slate-900'}`}>{faq.q}</h4>
+                <ChevronRight className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${openIndex === i ? 'rotate-90' : ''} ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+              </button>
+              <div className={`overflow-hidden transition-all duration-200 ${openIndex === i ? 'max-h-40' : 'max-h-0'}`}>
+                <p className={`px-4 pb-4 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{faq.a}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -1702,20 +1821,104 @@ const FAQ = () => {
 // FOOTER COMPONENT
 // ═══════════════════════════════════════════════════════════════
 const Footer = () => {
-  const { darkMode } = useApp();
+  const { darkMode, lang } = useApp();
+
+  const links = {
+    product: lang === 'pl'
+      ? [{ label: 'Funkcje', href: '#demo' }, { label: 'Cennik', href: '#/early-access' }, { label: 'Demo', href: '#demo' }]
+      : [{ label: 'Features', href: '#demo' }, { label: 'Pricing', href: '#/early-access' }, { label: 'Demo', href: '#demo' }],
+    company: lang === 'pl'
+      ? [{ label: 'O nas', href: '#' }, { label: 'Kontakt', href: 'mailto:hcklabs.dev@gmail.com' }, { label: 'Blog', href: '#' }]
+      : [{ label: 'About', href: '#' }, { label: 'Contact', href: 'mailto:hcklabs.dev@gmail.com' }, { label: 'Blog', href: '#' }],
+    legal: lang === 'pl'
+      ? [{ label: 'Regulamin', href: '#' }, { label: 'Prywatność', href: '#' }]
+      : [{ label: 'Terms', href: '#' }, { label: 'Privacy', href: '#' }],
+  };
 
   return (
-    <footer className={`px-6 py-12 border-t ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-      <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex items-center gap-2">
-          <div className={`w-5 h-5 grid grid-cols-4 grid-rows-4 gap-[1px] p-[2px] border rounded ${darkMode ? 'border-slate-600' : 'border-slate-300'}`}>
-            {[1,1,1,0,1,0,0,1,1,0,1,0,0,1,0,1].map((f, i) => (
-              <div key={i} className={`${f ? (darkMode ? 'bg-white' : 'bg-slate-600') : 'bg-transparent'} rounded-[1px]`} />
-            ))}
+    <footer className={`px-6 py-12 border-t ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+      <div className="max-w-5xl mx-auto">
+        {/* Main Footer Content */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+          {/* Brand */}
+          <div className="col-span-2 md:col-span-1">
+            <div className="flex items-center gap-2 mb-3">
+              <div className={`w-6 h-6 grid grid-cols-4 grid-rows-4 gap-[1px] p-[2px] border rounded ${darkMode ? 'border-slate-600' : 'border-slate-300'}`}>
+                {[1,1,1,0,1,0,0,1,1,0,1,0,0,1,0,1].map((f, i) => (
+                  <div key={i} className={`${f ? (darkMode ? 'bg-white' : 'bg-slate-600') : 'bg-transparent'} rounded-[1px]`} />
+                ))}
+              </div>
+              <span className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                Guide<span className="text-blue-500">AI</span>
+              </span>
+            </div>
+            <p className={`text-sm mb-4 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+              {lang === 'pl'
+                ? 'Zamień instrukcje w inteligentne rozmowy.'
+                : 'Turn manuals into intelligent conversations.'}
+            </p>
           </div>
-          <span className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-700'}`}>GuideAI</span>
+
+          {/* Product */}
+          <div>
+            <h4 className={`font-semibold text-sm mb-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              {lang === 'pl' ? 'Produkt' : 'Product'}
+            </h4>
+            <ul className="space-y-2">
+              {links.product.map((link, i) => (
+                <li key={i}>
+                  <a href={link.href} className={`text-sm transition-colors ${darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Company */}
+          <div>
+            <h4 className={`font-semibold text-sm mb-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              {lang === 'pl' ? 'Firma' : 'Company'}
+            </h4>
+            <ul className="space-y-2">
+              {links.company.map((link, i) => (
+                <li key={i}>
+                  <a href={link.href} className={`text-sm transition-colors ${darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <h4 className={`font-semibold text-sm mb-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              {lang === 'pl' ? 'Prawne' : 'Legal'}
+            </h4>
+            <ul className="space-y-2">
+              {links.legal.map((link, i) => (
+                <li key={i}>
+                  <a href={link.href} className={`text-sm transition-colors ${darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-        <p className={`text-sm ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Built with 💙 by HCK_Labs © 2026</p>
+
+        {/* Bottom Bar */}
+        <div className={`pt-6 border-t flex flex-col sm:flex-row justify-between items-center gap-4 ${darkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+          <p className={`text-sm ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+            © 2026 HCK_Labs. {lang === 'pl' ? 'Wszelkie prawa zastrzeżone.' : 'All rights reserved.'}
+          </p>
+          <div className="flex items-center gap-4">
+            <a href="mailto:hcklabs.dev@gmail.com" className={`text-sm transition-colors ${darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
+              hcklabs.dev@gmail.com
+            </a>
+          </div>
+        </div>
       </div>
     </footer>
   );
@@ -1963,6 +2166,7 @@ function GuideAIInner() {
         />
         <ExampleGrid onSelectDevice={handleSelectDevice} demoRef={demoRef} />
         <UseCases onSelectDevice={handleSelectDevice} demoRef={demoRef} />
+        <HowItWorks />
         <Pricing onEarlyAccess={() => setShowEarlyAccessModal(true)} />
         <FAQ />
         <EarlyAccessModal isOpen={showEarlyAccessModal} onClose={() => setShowEarlyAccessModal(false)} />
