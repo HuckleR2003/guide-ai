@@ -236,15 +236,10 @@ export default function EarlyAccess() {
 
         {/* Trust */}
         <div className={`mt-10 pt-6 border-t ${darkMode ? 'border-slate-800' : 'border-slate-200'}`}>
-          <div className="flex flex-wrap items-center justify-center gap-6 text-center">
+          <div className="flex flex-wrap items-center justify-center gap-8 text-center">
             <div>
               <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>500+</div>
               <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>devices connected</div>
-            </div>
-            <div className={`w-px h-8 ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`} />
-            <div>
-              <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>4.9/5</div>
-              <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>user rating</div>
             </div>
             <div className={`w-px h-8 ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`} />
             <div>
