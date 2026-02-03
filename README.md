@@ -1,37 +1,47 @@
-# GuideAI by HCK_Labs
+# GuideAI
 
-**Turn unreadable PDF manuals into instant AI conversations via QR codes.**
+**Turn PDF manuals into AI-powered QR assistants.**
 
-![Status](https://img.shields.io/badge/Status-MVP--Live-brightgreen)
-![Version](https://img.shields.io/badge/Version-1.1.0--beta-blue)
-![React](https://img.shields.io/badge/React-18.x-61dafb)
-![License](https://img.shields.io/badge/License-MIT-blue)
+[![Version](https://img.shields.io/badge/version-1.1.8-blue.svg)](https://github.com/HuckleR2003/guide-ai/releases)
 
----
+**Live:** [guide-ai-gold.vercel.app](https://guide-ai-gold.vercel.app)
 
-## Overview
-GuideAI is a specialized tool designed to bridge the gap between complex hardware documentation and the end-user. Instead of hunting through 400-page PDFs, users scan a physical QR code to talk directly to the machine's documentation.
-Just for save your time.
+## Tech Stack
 
-**What it does:**
-- Extracts technical data from PDF manuals in real-time.
-- Generates context-aware QR codes for physical devices.
-- Provides a minimalist chat interface for troubleshooting.
-- Automatically handles multi-language support (EN/PL).
+React 19 | Vite | Tailwind CSS | Supabase | Groq API | Vercel
 
-**Why it's different:**
-- **Zero Friction:** No accounts or app downloads for the end-user. Just scan and solve.
-- **Speed:** Powered by Groq (Llama 3), delivering answers in <0.5s.
-- **Dynamic Context:** The AI doesn't just guess; it's anchored to the specific manual you uploaded.
-- **Developer-Centric:** Built with "Brutal Minimalism" — removing UI noise to focus on information clarity.
+## Features
 
----
+- PDF upload & AI chat (Groq Llama 3.1)
+- QR code generation
+- Auth (Email + Google OAuth)
+- User dashboard
+- i18n (EN/PL) + Dark mode
 
-## Quick Start
+## v1.1.8 (04.02.2026)
 
-### For Users (Web Version)
-1. Go to 
-2. Upload any PDF manual / Or select you Don't have PDF.
-3. Generate and print your device's unique QR code.
-   ```You can print this code, and use anytime for Mobile chat.```
-5. Stick the QR on the machine. Done.
+- Supabase auth integration
+- User profiles & dashboard
+- Device management (save/view/delete QR)
+- Session persistence
+- UI: How It Works, FAQ accordion, improved Footer
+
+**Status:** Database optimization in progress. Full QR persistence in v1.2.0.
+
+## Setup
+
+```bash
+npm install
+npm run dev
+```
+
+```env
+VITE_SUPABASE_URL=your-url
+VITE_SUPABASE_ANON_KEY=your-key
+```
+
+See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) for database schema.
+
+## License
+
+MIT - HCK_Labs 2026
