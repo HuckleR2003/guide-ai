@@ -144,8 +144,12 @@ const TRANSLATIONS = {
 // ═══════════════════════════════════════════════════════════════
 // THEME & LANGUAGE CONTEXT
 // ═══════════════════════════════════════════════════════════════
-const AppContext = createContext();
-const useApp = () => useContext(AppContext);
+const AppContext = createContext(null);
+const useApp = () => {
+  const context = useContext(AppContext);
+  // Return safe defaults if context is not available
+  return context || { darkMode: false, lang: 'en', t: (k) => k, toggleDarkMode: () => {}, toggleLang: () => {} };
+};
 
 // ═══════════════════════════════════════════════════════════════
 // GROQ API CONFIGURATION
@@ -1934,19 +1938,28 @@ const Footer = () => {
 // ═══════════════════════════════════════════════════════════════
 // USER MENU COMPONENT
 // ═══════════════════════════════════════════════════════════════
-const UserMenu = ({ onOpenAuth }) => {
-  const { user, isAuthenticated, isPro, loading } = useAuth();
-  const { darkMode, lang } = useApp();
+const UserMenu = ({ onOpenAuth, darkMode: propDarkMode, lang: propLang }) => {
+  const { user, isAuthenticated, isPro, loading, profile } = useAuth();
+  const appContext = useApp();
+  const darkMode = propDarkMode ?? appContext?.darkMode ?? false;
+  const lang = propLang ?? appContext?.lang ?? 'en';
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
     setMenuOpen(false);
     window.location.hash = '';
+    window.location.reload();
   };
 
-  if (loading) return null;
+  // Show loading skeleton
+  if (loading) {
+    return (
+      <div className={`w-10 h-10 rounded-full animate-pulse ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`} />
+    );
+  }
 
+  // Not logged in - show Sign in button
   if (!isAuthenticated) {
     return (
       <button
@@ -1963,52 +1976,95 @@ const UserMenu = ({ onOpenAuth }) => {
     );
   }
 
+  // Logged in - show profile avatar with dropdown menu
+  const userInitial = profile?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U';
+  const avatarUrl = profile?.avatar_url;
+
   return (
     <div className="relative">
       <button
         onClick={() => setMenuOpen(!menuOpen)}
-        className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all ${
-          darkMode ? 'bg-slate-800 hover:bg-slate-700' : 'bg-white hover:bg-slate-100 shadow-md'
+        className={`flex items-center gap-2 px-2 py-2 rounded-full transition-all border-2 ${
+          darkMode
+            ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 hover:border-slate-600'
+            : 'bg-white hover:bg-slate-50 shadow-md border-slate-200 hover:border-slate-300'
         }`}
       >
-        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-          isPro ? 'bg-amber-500 text-white' : 'bg-blue-500 text-white'
-        }`}>
-          {user?.email?.charAt(0).toUpperCase()}
-        </div>
-        {isPro && <Crown className="w-3 h-3 text-amber-400" />}
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt="Avatar"
+            className="w-7 h-7 rounded-full object-cover"
+          />
+        ) : (
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${
+            isPro ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white' : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white'
+          }`}>
+            {userInitial.toUpperCase()}
+          </div>
+        )}
+        {isPro && <Crown className="w-3.5 h-3.5 text-amber-400" />}
       </button>
 
       {menuOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-          <div className={`absolute right-0 top-full mt-2 w-48 rounded-xl shadow-xl border z-50 overflow-hidden ${
+          <div className={`absolute right-0 top-full mt-2 w-56 rounded-xl shadow-2xl border z-50 overflow-hidden ${
             darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
           }`}>
-            <div className={`px-3 py-2 border-b ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
-              <p className={`text-xs truncate ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                {user?.email}
-              </p>
+            {/* User info header */}
+            <div className={`px-4 py-3 border-b ${darkMode ? 'border-slate-700 bg-slate-800/50' : 'border-slate-100 bg-slate-50'}`}>
+              <div className="flex items-center gap-3">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
+                    isPro ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white' : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white'
+                  }`}>
+                    {userInitial.toUpperCase()}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {profile?.full_name || user?.email?.split('@')[0] || 'User'}
+                  </p>
+                  <p className={`text-xs truncate ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {user?.email}
+                  </p>
+                </div>
+              </div>
+              {isPro && (
+                <div className="mt-2">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full">
+                    <Crown className="w-3 h-3" /> PRO
+                  </span>
+                </div>
+              )}
             </div>
-            <a
-              href="#/dashboard"
-              onClick={() => setMenuOpen(false)}
-              className={`flex items-center gap-2 px-3 py-2.5 text-sm transition-colors ${
-                darkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              {lang === 'pl' ? 'Panel' : 'Dashboard'}
-            </a>
-            <button
-              onClick={handleSignOut}
-              className={`flex items-center gap-2 px-3 py-2.5 text-sm w-full transition-colors ${
-                darkMode ? 'text-red-400 hover:bg-slate-700' : 'text-red-600 hover:bg-slate-50'
-              }`}
-            >
-              <LogOut className="w-4 h-4" />
-              {lang === 'pl' ? 'Wyloguj' : 'Sign out'}
-            </button>
+
+            {/* Menu items */}
+            <div className="py-1">
+              <a
+                href="#/dashboard"
+                onClick={() => setMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                  darkMode ? 'text-slate-300 hover:bg-slate-700 hover:text-white' : 'text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                {lang === 'pl' ? 'Panel urządzeń' : 'My Devices'}
+              </a>
+              <div className={`my-1 border-t ${darkMode ? 'border-slate-700' : 'border-slate-100'}`} />
+              <button
+                onClick={handleSignOut}
+                className={`flex items-center gap-3 px-4 py-2.5 text-sm w-full transition-colors ${
+                  darkMode ? 'text-red-400 hover:bg-red-500/10' : 'text-red-600 hover:bg-red-50'
+                }`}
+              >
+                <LogOut className="w-4 h-4" />
+                {lang === 'pl' ? 'Wyloguj się' : 'Sign out'}
+              </button>
+            </div>
           </div>
         </>
       )}
