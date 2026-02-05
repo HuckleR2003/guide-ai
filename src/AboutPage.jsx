@@ -1,4 +1,4 @@
-import { ChevronLeft, Sparkles, Target, Users, Zap, Heart, Globe, Rocket, Code, Building2 } from 'lucide-react';
+import { ChevronLeft, Sparkles, Target, Users, Zap, Heart, Globe, Rocket, Code, Building2, Package, Moon, Coffee, Clock, Laptop, Star, ArrowRight } from 'lucide-react';
 
 const AboutPage = ({ darkMode = false }) => {
   const handleBack = () => {
@@ -51,6 +51,34 @@ const AboutPage = ({ darkMode = false }) => {
     },
   ];
 
+  // Founder's story milestones with icons
+  const storyMilestones = [
+    {
+      icon: Package,
+      title: 'Day Shift',
+      description: 'Order picker in Dutch warehouses. 15-20km walking daily between shelves.',
+      accent: 'from-amber-500 to-orange-500',
+    },
+    {
+      icon: Moon,
+      title: 'Night Shift',
+      description: 'Coding on a 2014 laptop hitting 94°C. Building what would become GuideAI.',
+      accent: 'from-indigo-500 to-purple-500',
+    },
+    {
+      icon: Coffee,
+      title: '340+ Coffees',
+      description: '680+ hours of code. 4 complete rebuilds. Zero shortcuts.',
+      accent: 'from-amber-600 to-amber-700',
+    },
+    {
+      icon: Rocket,
+      title: 'The Launch',
+      description: 'From warehouse floor to product launch. Same determination, different tools.',
+      accent: 'from-blue-500 to-cyan-500',
+    },
+  ];
+
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'}`}>
       {/* Header */}
@@ -90,64 +118,126 @@ const AboutPage = ({ darkMode = false }) => {
         </div>
       </section>
 
-      {/* Founder Section */}
-      <section className={`px-6 py-16 ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* FOUNDER'S AUTHENTIC STORY SECTION */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      <section className={`px-6 py-20 ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
         <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            {/* Photo Placeholder */}
-            <div className="relative">
-              <div className={`aspect-square rounded-3xl overflow-hidden ${darkMode ? 'bg-gradient-to-br from-blue-600 to-indigo-700' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center text-white">
-                    <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
-                      <Code className="w-16 h-16" />
+          {/* Section header */}
+          <div className="text-center mb-16">
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4 ${darkMode ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-600'}`}>
+              <Heart className="w-4 h-4" />
+              <span className="text-sm font-medium">The Real Story</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Built by someone who{' '}
+              <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                actually uses it
+              </span>
+            </h2>
+            <p className={`text-lg max-w-2xl mx-auto ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+              No Silicon Valley story here. Just a warehouse worker who got tired of watching people struggle with manuals.
+            </p>
+          </div>
+
+          {/* Two column layout */}
+          <div className="grid lg:grid-cols-5 gap-12 items-start">
+            {/* Left: Visual/Photo */}
+            <div className="lg:col-span-2">
+              <div className="relative">
+                {/* Main card with gradient */}
+                <div className={`aspect-[4/5] rounded-3xl overflow-hidden ${darkMode ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-slate-100 to-slate-200'}`}>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
+                    {/* Logo/Avatar */}
+                    <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-6 shadow-xl">
+                      <span className="text-3xl font-black text-white">HCK</span>
                     </div>
-                    <p className="text-2xl font-bold">Marcin</p>
-                    <p className="text-white/80">Founder & CEO</p>
+
+                    <h3 className={`text-2xl font-bold mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Marcin</h3>
+                    <p className={`text-sm mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Founder & Builder</p>
+
+                    {/* Stats row */}
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                      <div className={`p-3 rounded-xl text-center ${darkMode ? 'bg-slate-800/50' : 'bg-white/80'}`}>
+                        <div className="text-xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">680+</div>
+                        <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>Hours of code</div>
+                      </div>
+                      <div className={`p-3 rounded-xl text-center ${darkMode ? 'bg-slate-800/50' : 'bg-white/80'}`}>
+                        <div className="text-xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">94°C</div>
+                        <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>Laptop peak</div>
+                      </div>
+                    </div>
+
+                    {/* Location badge */}
+                    <div className={`mt-6 flex items-center gap-2 px-3 py-1.5 rounded-full ${darkMode ? 'bg-slate-800/50' : 'bg-white/80'}`}>
+                      <Globe className="w-3.5 h-3.5 text-blue-500" />
+                      <span className={`text-xs font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Poland → Netherlands → Building</span>
+                    </div>
                   </div>
                 </div>
+
+                {/* Decorative elements */}
+                <div className="absolute -top-3 -right-3 w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl -z-10 opacity-40 blur-sm" />
+                <div className="absolute -bottom-3 -left-3 w-24 h-24 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-2xl -z-10 opacity-30 blur-sm" />
               </div>
-              {/* Decorative elements */}
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl -z-10 opacity-50" />
-              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-2xl -z-10 opacity-30" />
             </div>
 
-            {/* Bio */}
-            <div>
-              <h2 className="text-3xl font-bold mb-6">Meet the Founder</h2>
-              <div className={`space-y-4 ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                <p>
-                  <strong className={darkMode ? 'text-white' : 'text-slate-900'}>Marcin</strong> is a technology entrepreneur
-                  with deep roots in logistics and operations. After years of watching teams struggle with
-                  complex equipment manuals, he knew there had to be a better way.
-                </p>
-                <p>
-                  "In warehouses and factories, I saw the same pattern everywhere: expensive machinery
-                  sitting idle because operators couldn't quickly find the information they needed.
-                  Manuals were collecting dust while support tickets piled up."
-                </p>
-                <p>
-                  This frustration led to the creation of <strong className={darkMode ? 'text-white' : 'text-slate-900'}>HCK_Labs</strong>,
-                  a technology studio focused on practical AI solutions. GuideAI is the flagship product —
-                  a platform that transforms static PDFs into intelligent, conversational assistants.
-                </p>
-                <p>
-                  "Our mission is simple: make product knowledge instantly accessible to anyone,
-                  anywhere, through a simple QR scan."
+            {/* Right: Story content */}
+            <div className="lg:col-span-3 space-y-8">
+              {/* Quote */}
+              <div className={`relative p-6 rounded-2xl ${darkMode ? 'bg-slate-800/50' : 'bg-white'} border-l-4 border-amber-500`}>
+                <div className="absolute -top-3 -left-2 text-5xl text-amber-500/30 font-serif">"</div>
+                <p className={`text-lg italic ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                  I spent years watching people flip through 200-page manuals while expensive machines sat idle.
+                  The solution wasn't a better manual—it was letting people just <em>ask</em>.
                 </p>
               </div>
 
-              {/* Social/Contact */}
-              <div className="mt-8 flex items-center gap-4">
+              {/* Story milestones */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                {storyMilestones.map((milestone, index) => (
+                  <div
+                    key={index}
+                    className={`p-5 rounded-2xl transition-all hover:scale-[1.02] ${darkMode ? 'bg-slate-800/30 hover:bg-slate-800/50' : 'bg-white hover:shadow-lg'}`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${milestone.accent} flex items-center justify-center mb-3`}>
+                      <milestone.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <h4 className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>{milestone.title}</h4>
+                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{milestone.description}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* The honest truth */}
+              <div className={`p-6 rounded-2xl ${darkMode ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-blue-50 border border-blue-100'}`}>
+                <h4 className={`font-semibold mb-3 flex items-center gap-2 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>
+                  <Star className="w-4 h-4" />
+                  The honest truth
+                </h4>
+                <p className={`text-sm leading-relaxed ${darkMode ? 'text-blue-300/80' : 'text-blue-600'}`}>
+                  I'm not a Stanford dropout. I didn't raise millions. I built GuideAI because I was frustrated—
+                  frustrated watching coworkers waste hours on problems that a simple "ask the manual" could solve.
+                  This is a tool built by someone who's actually stood on a warehouse floor at 3 AM wondering
+                  why the forklift won't start.
+                </p>
+              </div>
+
+              {/* CTA */}
+              <div className="flex flex-wrap items-center gap-4">
+                <a
+                  href="#/story"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium text-sm hover:opacity-90 transition-all"
+                >
+                  Read the full journey
+                  <ArrowRight className="w-4 h-4" />
+                </a>
                 <a
                   href="mailto:firmuga.marcin.s@gmail.com"
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${darkMode ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${darkMode ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}
                 >
-                  Get in Touch
+                  Get in touch
                 </a>
-                <span className={`text-sm ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                  Based in Poland
-                </span>
               </div>
             </div>
           </div>

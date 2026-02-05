@@ -95,11 +95,9 @@ const DeviceCard = ({ device, darkMode, lang, t, onSelectQR, onOpenChat, onDelet
 
   return (
     <div
-      className={`group relative rounded-2xl p-5 border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${darkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:shadow-slate-900/50' : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'}`}
+      className={`card-entrance group relative rounded-2xl p-5 border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${darkMode ? 'bg-slate-900 border-slate-800 hover:border-blue-500/30 hover:shadow-blue-500/10' : 'bg-white border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-blue-500/10'}`}
       style={{
-        animationDelay: `${index * 50}ms`,
-        animation: 'fadeSlideIn 0.4s ease-out forwards',
-        opacity: 0,
+        animationDelay: `${index * 80}ms`,
       }}
     >
       {/* Status Badge */}
@@ -388,17 +386,30 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
 
   return (
     <div className={`min-h-screen transition-colors ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
-      {/* CSS Animation */}
+      {/* CSS Animations - Premium entrance effects */}
       <style>{`
         @keyframes fadeSlideIn {
           from {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(20px) scale(0.95);
+            filter: blur(4px);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
+            filter: blur(0);
           }
+        }
+        @keyframes cardPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+          50% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        }
+        .card-entrance {
+          animation: fadeSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          opacity: 0;
+        }
+        .card-entrance:hover {
+          animation: cardPulse 2s ease-in-out infinite;
         }
       `}</style>
 

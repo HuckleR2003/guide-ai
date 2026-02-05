@@ -472,7 +472,188 @@ const DEMO_RESPONSES = {
   'default': 'Na podstawie instrukcji mogę pomóc z kodami błędów, ustawieniami i konserwacją. Zadaj mi konkretne pytanie!'
 };
 
-// HEADER
+// ═══════════════════════════════════════════════════════════════
+// FLOATING NAVBAR WITH GLASSMORPHISM
+// ═══════════════════════════════════════════════════════════════
+const FloatingNavbar = ({ onOpenAuth, toggleDarkMode, toggleLang }) => {
+  const { darkMode, lang } = useApp();
+  const { isAuthenticated } = useAuth();
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const navLinks = [
+    { label: lang === 'pl' ? 'Demo' : 'Demo', href: '#demo-section', scroll: true },
+    { label: lang === 'pl' ? 'Cennik' : 'Pricing', href: '#pricing-section', scroll: true },
+    { label: lang === 'pl' ? 'O nas' : 'About', href: '#/about' },
+    { label: lang === 'pl' ? 'Kontakt' : 'Contact', href: '#/contact' },
+  ];
+
+  const handleNavClick = (e, link) => {
+    if (link.scroll) {
+      e.preventDefault();
+      const id = link.href.replace('#', '');
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    }
+    setMobileMenuOpen(false);
+  };
+
+  return (
+    <>
+      <nav className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ${scrolled ? 'top-2' : 'top-4'}`}>
+        <div className={`
+          flex items-center gap-1 px-2 py-2 rounded-2xl border transition-all duration-300
+          ${darkMode
+            ? 'bg-slate-900/70 border-slate-700/50 shadow-2xl shadow-black/20'
+            : 'bg-white/70 border-slate-200/50 shadow-2xl shadow-slate-900/10'
+          }
+          backdrop-blur-xl backdrop-saturate-150
+        `}>
+          {/* Logo */}
+          <a href="#" className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-blue-500/10 transition-all">
+            <div className={`w-6 h-6 grid grid-cols-4 grid-rows-4 gap-[1px] p-[2px] border rounded ${darkMode ? 'border-slate-600' : 'border-slate-300'}`}>
+              {[1,1,1,0,1,0,0,1,1,0,1,0,0,1,0,1].map((filled, i) => (
+                <div key={i} className={`${filled ? (darkMode ? 'bg-white' : 'bg-slate-800') : 'bg-transparent'} rounded-[0.5px]`} />
+              ))}
+            </div>
+            <span className={`font-bold text-sm hidden sm:block ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              Guide<span className="text-blue-500">AI</span>
+            </span>
+          </a>
+
+          {/* Divider */}
+          <div className={`w-px h-6 mx-1 ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`} />
+
+          {/* Nav Links - Desktop */}
+          <div className="hidden md:flex items-center gap-0.5">
+            {navLinks.map((link, i) => (
+              <a
+                key={i}
+                href={link.href}
+                onClick={(e) => handleNavClick(e, link)}
+                className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${
+                  darkMode
+                    ? 'text-slate-300 hover:text-white hover:bg-white/10'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5'
+                }`}
+              >
+                {link.label}
+              </a>
+            ))}
+            {isAuthenticated && (
+              <a
+                href="#/dashboard"
+                className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${
+                  darkMode
+                    ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-500/10'
+                    : 'text-blue-600 hover:text-blue-700 hover:bg-blue-500/10'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  Dashboard
+                </span>
+              </a>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div className={`w-px h-6 mx-1 hidden md:block ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`} />
+
+          {/* Right side controls */}
+          <div className="flex items-center gap-1">
+            {/* Language toggle */}
+            <button
+              onClick={toggleLang}
+              className={`p-2 rounded-xl text-xs font-bold transition-all ${
+                darkMode ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-900/5'
+              }`}
+              title={lang === 'pl' ? 'Switch to English' : 'Zmień na Polski'}
+            >
+              {lang.toUpperCase()}
+            </button>
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className={`p-2 rounded-xl transition-all ${
+                darkMode ? 'text-amber-400 hover:bg-amber-500/10' : 'text-slate-600 hover:bg-slate-900/5'
+              }`}
+              title={darkMode ? 'Light mode' : 'Dark mode'}
+            >
+              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+
+            {/* User menu */}
+            <UserMenu onOpenAuth={onOpenAuth} />
+
+            {/* Mobile menu toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className={`p-2 rounded-xl md:hidden transition-all ${
+                darkMode ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5'
+              }`}
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile menu dropdown */}
+        {mobileMenuOpen && (
+          <div className={`
+            absolute top-full left-0 right-0 mt-2 p-2 rounded-2xl border
+            ${darkMode
+              ? 'bg-slate-900/90 border-slate-700/50'
+              : 'bg-white/90 border-slate-200/50'
+            }
+            backdrop-blur-xl md:hidden
+          `}>
+            {navLinks.map((link, i) => (
+              <a
+                key={i}
+                href={link.href}
+                onClick={(e) => handleNavClick(e, link)}
+                className={`block px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  darkMode
+                    ? 'text-slate-300 hover:text-white hover:bg-white/10'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5'
+                }`}
+              >
+                {link.label}
+              </a>
+            ))}
+            {isAuthenticated && (
+              <a
+                href="#/dashboard"
+                className={`block px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  darkMode
+                    ? 'text-blue-400 hover:bg-blue-500/10'
+                    : 'text-blue-600 hover:bg-blue-500/10'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <LayoutDashboard className="w-4 h-4" />
+                  Dashboard
+                </span>
+              </a>
+            )}
+          </div>
+        )}
+      </nav>
+
+      {/* Spacer to prevent content from going under navbar */}
+      <div className="h-20" />
+    </>
+  );
+};
+
+// HEADER (Legacy - kept for reference)
 const Header = () => {
   const { darkMode } = useApp();
   return (
@@ -2401,44 +2582,34 @@ function GuideAIInner() {
   return (
     <AppContext.Provider value={contextValue}>
       <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
-        {/* Theme, Language & User Toggles */}
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
-          <button
-            onClick={toggleLang}
-            className={`p-2 rounded-full transition-all ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-white hover:bg-slate-100 text-slate-900 shadow-md'}`}
-            title={lang === 'pl' ? 'Switch to English' : 'Zmień na Polski'}
-          >
-            <Globe className="w-4 h-4" />
-            <span className="ml-1 text-xs font-bold">{lang.toUpperCase()}</span>
-          </button>
-          <button
-            onClick={toggleDarkMode}
-            className={`p-2 rounded-full transition-all ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-yellow-400' : 'bg-white hover:bg-slate-100 text-slate-900 shadow-md'}`}
-            title={darkMode ? 'Light mode' : 'Dark mode'}
-          >
-            {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-          <UserMenu onOpenAuth={() => setShowAuthModal(true)} />
-        </div>
-
-        <Header />
-        <Hero />
-        <InteractiveDemo
-          ref={demoRef}
-          pdfUploaded={pdfUploaded}
-          pdfName={pdfName}
-          pdfContext={pdfContext}
-          setPdfUploaded={setPdfUploaded}
-          setPdfName={setPdfName}
-          setPdfContext={setPdfContext}
-          fromUrl={fromUrl}
-          setFromUrl={setFromUrl}
+        {/* Floating Navbar with Glassmorphism */}
+        <FloatingNavbar
           onOpenAuth={() => setShowAuthModal(true)}
+          toggleDarkMode={toggleDarkMode}
+          toggleLang={toggleLang}
         />
+
+        <Hero />
+        <div id="demo-section">
+          <InteractiveDemo
+            ref={demoRef}
+            pdfUploaded={pdfUploaded}
+            pdfName={pdfName}
+            pdfContext={pdfContext}
+            setPdfUploaded={setPdfUploaded}
+            setPdfName={setPdfName}
+            setPdfContext={setPdfContext}
+            fromUrl={fromUrl}
+            setFromUrl={setFromUrl}
+            onOpenAuth={() => setShowAuthModal(true)}
+          />
+        </div>
         <ExampleGrid onSelectDevice={handleSelectDevice} demoRef={demoRef} />
         <UseCases onSelectDevice={handleSelectDevice} demoRef={demoRef} />
         <HowItWorks />
-        <Pricing onEarlyAccess={() => setShowEarlyAccessModal(true)} />
+        <div id="pricing-section">
+          <Pricing onEarlyAccess={() => setShowEarlyAccessModal(true)} />
+        </div>
         <FAQ />
         <EarlyAccessModal isOpen={showEarlyAccessModal} onClose={() => setShowEarlyAccessModal(false)} />
         <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} darkMode={darkMode} lang={lang} />

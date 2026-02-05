@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, Mail, Send, MapPin, Clock, MessageSquare, Sparkles, Check, Loader2 } from 'lucide-react';
+import { ChevronLeft, Mail, Send, MapPin, Clock, MessageSquare, Sparkles, Check, Loader2, BookOpen, ExternalLink } from 'lucide-react';
 
 const ContactPage = ({ darkMode = false }) => {
   const [formData, setFormData] = useState({
@@ -239,6 +239,27 @@ const ContactPage = ({ darkMode = false }) => {
                         </>
                       )}
                     </button>
+
+                    {/* Follow on Medium */}
+                    <div className={`mt-6 pt-6 border-t text-center ${darkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+                      <p className={`text-sm mb-3 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Want to see how GuideAI is being built?
+                      </p>
+                      <a
+                        href="https://medium.com/@hcklabs"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                          darkMode
+                            ? 'bg-slate-800 text-white hover:bg-slate-700'
+                            : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+                        }`}
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        Follow the journey on Medium
+                        <ExternalLink className="w-3.5 h-3.5 opacity-50" />
+                      </a>
+                    </div>
                   </form>
                 )}
               </div>

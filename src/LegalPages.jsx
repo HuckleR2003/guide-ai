@@ -1,4 +1,4 @@
-import { ChevronLeft, Shield, Lock, FileText, Scale, Globe, CreditCard, Users, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Shield, Lock, FileText, Scale, Globe, CreditCard, Users, AlertCircle, Zap, CheckCircle2 } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════════════════
 // TERMS OF SERVICE
@@ -111,7 +111,7 @@ Upon termination:
       {/* Content */}
       <main className="max-w-4xl mx-auto px-6 py-12">
         {/* Hero */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6 ${darkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
             <Scale className="w-8 h-8 text-blue-500" />
           </div>
@@ -119,6 +119,36 @@ Upon termination:
           <p className={`text-lg ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
             Last updated: February 2026
           </p>
+        </div>
+
+        {/* TL;DR Quick Summary */}
+        <div className={`mb-12 p-6 rounded-2xl border-2 ${darkMode ? 'bg-amber-500/5 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className={`w-5 h-5 ${darkMode ? 'text-amber-400' : 'text-amber-600'}`} />
+            <h2 className={`text-lg font-bold ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>
+              TL;DR - Quick Summary
+            </h2>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+              <p className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                <strong>Use it fairly:</strong> Don't upload malicious content or try to hack the service. Keep your account secure.
+              </p>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+              <p className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                <strong>Your content stays yours:</strong> You own everything you upload. We just process it to make the AI work.
+              </p>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+              <p className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                <strong>Money back guarantee:</strong> 7-day refund policy for new subscriptions. No questions asked.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Sections */}
@@ -292,7 +322,7 @@ You can manage cookie preferences in your browser settings. Note that disabling 
       {/* Content */}
       <main className="max-w-4xl mx-auto px-6 py-12">
         {/* Hero */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6 ${darkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
             <Lock className="w-8 h-8 text-green-500" />
           </div>
@@ -303,6 +333,36 @@ You can manage cookie preferences in your browser settings. Note that disabling 
           <p className={`mt-4 max-w-2xl mx-auto ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
             Your privacy is important to us. This policy explains how GuideAI collects, uses, and protects your personal information.
           </p>
+        </div>
+
+        {/* TL;DR Quick Summary */}
+        <div className={`mb-8 p-6 rounded-2xl border-2 ${darkMode ? 'bg-green-500/5 border-green-500/30' : 'bg-green-50 border-green-200'}`}>
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className={`w-5 h-5 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+            <h2 className={`text-lg font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+              TL;DR - Quick Summary
+            </h2>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+              <p className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                <strong>We collect the minimum:</strong> Just email, uploaded PDFs, and usage data. No tracking, no selling your data.
+              </p>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+              <p className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                <strong>Your data is encrypted:</strong> TLS 1.3 in transit, AES-256 at rest. Industry-standard security.
+              </p>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+              <p className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                <strong>You're in control:</strong> Request your data, delete your account, or export everything anytime.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* GDPR Badge */}
