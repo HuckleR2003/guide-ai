@@ -7,6 +7,61 @@ import Dashboard from './Dashboard';
 import AuthModal from './AuthModal';
 import { AuthProvider, useAuth } from './AuthContext';
 import { saveDevice, canSaveMoreDevices, signOut, supabase } from './supabaseClient';
+import { ToastProvider, useToast } from './Toast';
+import { TermsOfService, PrivacyPolicy } from './LegalPages';
+import AboutPage from './AboutPage';
+import ContactPage from './ContactPage';
+import StoryPage from './StoryPage';
+
+// Confetti helper (lightweight implementation)
+const fireConfetti = () => {
+  // Try to use canvas-confetti if available, otherwise use CSS animation fallback
+  if (typeof window !== 'undefined' && window.confetti) {
+    window.confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  } else {
+    // CSS confetti fallback
+    const colors = ['#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B'];
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden;';
+    document.body.appendChild(container);
+
+    for (let i = 0; i < 50; i++) {
+      const confetti = document.createElement('div');
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.cssText = `
+        position:absolute;
+        width:10px;height:10px;
+        background:${color};
+        left:${Math.random() * 100}%;
+        top:-20px;
+        opacity:1;
+        border-radius:${Math.random() > 0.5 ? '50%' : '0'};
+        animation:confetti-fall ${1.5 + Math.random()}s ease-out forwards;
+        animation-delay:${Math.random() * 0.3}s;
+      `;
+      container.appendChild(confetti);
+    }
+
+    // Add keyframes if not already added
+    if (!document.getElementById('confetti-style')) {
+      const style = document.createElement('style');
+      style.id = 'confetti-style';
+      style.textContent = `
+        @keyframes confetti-fall {
+          0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    setTimeout(() => container.remove(), 3000);
+  }
+};
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -223,9 +278,9 @@ const extractTextFromPDF = async (file, onProgress) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// GROQ AI FUNCTION (with Token Optimization)
+// GROQ AI FUNCTION (with Token Optimization + STRICT GROUNDING)
 // ═══════════════════════════════════════════════════════════════
-const askGroq = async (userQuestion, pdfContext, deviceType, deviceModel, chatHistory, isFirstMessage, demoResponses) => {
+const askGroq = async (userQuestion, pdfContext, deviceType, deviceModel, chatHistory, isFirstMessage, demoResponses, lang = 'en') => {
   // Fallback na lokalne odpowiedzi jeśli brak klucza API
   if (!GROQ_API_KEY) {
     const lowerInput = userQuestion.toLowerCase();
@@ -241,19 +296,54 @@ const askGroq = async (userQuestion, pdfContext, deviceType, deviceModel, chatHi
     // TOKEN OPTIMIZATION: Limit PDF context to 10k chars (~2500 tokens)
     const limitedPdfContext = pdfContext ? pdfContext.slice(0, 10000) : '';
 
-    // Build system prompt - PDF context ONLY on first message
-    let systemPrompt = `Jesteś profesjonalnym technikiem serwisu GuideAI.
-Urządzenie: ${deviceType} model: ${deviceModel}.
-Odpowiadaj konkretnie, w punktach, po polsku. Max 3-4 zdania.`;
+    // STRICT GROUNDING SYSTEM PROMPT
+    const systemPrompt = lang === 'pl'
+      ? `Jesteś asystentem technicznym GuideAI dla urządzenia: ${deviceType} ${deviceModel}.
+
+## ZASADY STRICT GROUNDING (BEZWZGLĘDNE):
+
+1. **TYLKO OFICJALNA INSTRUKCJA**: Odpowiadaj WYŁĄCZNIE na podstawie dostarczonej instrukcji PDF. Nie używaj zewnętrznej wiedzy.
+
+2. **WERYFIKACJA TWIERDZEŃ**: Jeśli użytkownik twierdzi coś o urządzeniu (np. "ta pralka działa na węgiel"), SPRAWDŹ to w instrukcji:
+   - Jeśli NIE MA takiej informacji w instrukcji → odpowiedz: "Nie mogę znaleźć informacji o [temat] w oficjalnej instrukcji tego urządzenia."
+   - NIGDY nie potwierdzaj fałszywych twierdzeń użytkownika.
+
+3. **BRAK INFORMACJI**: Gdy nie znajdziesz odpowiedzi w instrukcji:
+   - PL: "Nie mogę znaleźć informacji na ten temat w oficjalnej instrukcji ${deviceType} ${deviceModel}."
+
+4. **FORMAT**: Odpowiadaj krótko (2-4 zdania), w punktach gdy to pomocne. Cytuj numery stron/sekcji gdy to możliwe.
+
+5. **ODMOWA**: Odmawiaj odpowiedzi na pytania nie związane z urządzeniem lub wykraczające poza instrukcję.`
+
+      : `You are a technical assistant for GuideAI, supporting device: ${deviceType} ${deviceModel}.
+
+## STRICT GROUNDING RULES (MANDATORY):
+
+1. **OFFICIAL MANUAL ONLY**: Answer EXCLUSIVELY based on the provided PDF manual. Do NOT use external knowledge.
+
+2. **VERIFY USER CLAIMS**: If user claims something about the device (e.g., "this washer runs on coal"), CHECK the manual:
+   - If NOT FOUND in manual → respond: "I cannot find any information about [topic] in the official manual for this device."
+   - NEVER confirm user's false claims.
+
+3. **NO INFORMATION**: When you cannot find an answer in the manual:
+   - EN: "I cannot find information about this topic in the official ${deviceType} ${deviceModel} manual."
+
+4. **FORMAT**: Keep answers concise (2-4 sentences), use bullet points when helpful. Cite page numbers/sections when possible.
+
+5. **DECLINE**: Refuse to answer questions unrelated to the device or beyond the manual scope.`;
 
     // Build messages array
     const messages = [{ role: 'system', content: systemPrompt }];
 
-    // FIRST MESSAGE: Include PDF context
+    // FIRST MESSAGE: Include PDF context with grounding instructions
     if (isFirstMessage && limitedPdfContext.length > 100) {
+      const groundingPrefix = lang === 'pl'
+        ? `[OFICJALNA INSTRUKCJA URZĄDZENIA - To jest JEDYNE źródło prawdy. Odpowiadaj TYLKO na podstawie tych informacji.]\n\n`
+        : `[OFFICIAL DEVICE MANUAL - This is the ONLY source of truth. Answer ONLY based on this information.]\n\n`;
+
       messages.push({
         role: 'user',
-        content: `[KONTEKST INSTRUKCJI - zapamiętaj na całą rozmowę]\n${limitedPdfContext}\n\n[PYTANIE]\n${userQuestion}`
+        content: `${groundingPrefix}${limitedPdfContext}\n\n---\n\n[USER QUESTION]: ${userQuestion}`
       });
     } else {
       // SUBSEQUENT MESSAGES: Only chat history + new question (NO PDF re-send)
@@ -474,6 +564,7 @@ const InteractiveDemo = React.forwardRef(({
 
   const { darkMode, lang, t } = useApp();
   const { user, isAuthenticated, planType } = useAuth();
+  const toast = useToast();
 
   // Scroll only within chat
   useEffect(() => {
@@ -824,7 +915,8 @@ const InteractiveDemo = React.forwardRef(({
         deviceModel,
         messages, // Pass chat history
         isFirst,  // Is this the first message?
-        DEMO_RESPONSES
+        DEMO_RESPONSES,
+        lang      // Pass language for strict grounding responses
       );
 
       // Mark first message as sent (PDF context won't be re-sent)
@@ -903,9 +995,9 @@ const InteractiveDemo = React.forwardRef(({
       // Check if user can save more devices based on plan
       const canSave = await canSaveMoreDevices(user.id, planType);
       if (!canSave) {
-        alert(lang === 'pl'
-          ? 'Osiągnąłeś limit urządzeń. Ulepsz plan, aby dodać więcej.'
-          : 'You reached the device limit. Upgrade your plan to add more.');
+        toast.error(lang === 'pl'
+          ? 'Osiągnąłeś limit urządzeń. Ulepsz plan!'
+          : 'Device limit reached. Upgrade your plan!');
         setSavingToDb(false);
         return;
       }
@@ -924,9 +1016,16 @@ const InteractiveDemo = React.forwardRef(({
       setSavedToDb(true);
       setShowSavedMessage(true);
       setTimeout(() => setShowSavedMessage(false), 6000);
+
+      // Success celebration!
+      fireConfetti();
+      toast.celebration(lang === 'pl'
+        ? 'Urządzenie dodane do Twojej cyfrowej półki!'
+        : 'Device added to your digital shelf!');
+
     } catch (err) {
       console.error('Failed to save device:', err);
-      alert(lang === 'pl' ? 'Nie udało się zapisać urządzenia.' : 'Failed to save device.');
+      toast.error(lang === 'pl' ? 'Nie udało się zapisać urządzenia.' : 'Failed to save device.');
     } finally {
       setSavingToDb(false);
     }
@@ -1451,6 +1550,7 @@ const UseCases = ({ onSelectDevice, demoRef }) => {
 // ═══════════════════════════════════════════════════════════════
 const Pricing = ({ onEarlyAccess }) => {
   const { darkMode, lang, t } = useApp();
+  const { user, isAuthenticated } = useAuth();
 
   const proFeatures = lang === 'pl'
     ? ['10 urządzeń', 'Dynamiczne kody QR', 'Wsparcie email', '1,000 zapytań/msc', 'Podstawowa analityka']
@@ -1459,6 +1559,27 @@ const Pricing = ({ onEarlyAccess }) => {
   const businessFeatures = lang === 'pl'
     ? ['Wszystko z Pro', 'Nielimitowane urządzenia', 'Pełny branding', 'Zaawansowana analityka', 'Priorytetowe wsparcie 24/7']
     : ['Everything in Pro', 'Unlimited devices', 'Full Branding', 'Custom Analytics', 'Priority 24/7 Support'];
+
+  // Handle plan selection - redirect to Stripe or show auth modal
+  const handleSelectPlan = (plan) => {
+    if (!isAuthenticated) {
+      // Show auth modal first, then redirect after login
+      onEarlyAccess();
+      return;
+    }
+
+    // Redirect to Stripe checkout with user info
+    // Replace these with your actual Stripe payment links
+    const stripeLinks = {
+      pro: `https://buy.stripe.com/test_pro_link?client_reference_id=${user.id}&prefilled_email=${encodeURIComponent(user.email)}`,
+      business: `https://buy.stripe.com/test_business_link?client_reference_id=${user.id}&prefilled_email=${encodeURIComponent(user.email)}`,
+    };
+
+    const checkoutUrl = stripeLinks[plan];
+    if (checkoutUrl) {
+      window.open(checkoutUrl, '_blank');
+    }
+  };
 
   return (
     <section className={`px-6 py-12 ${darkMode ? 'bg-slate-900' : ''}`}>
@@ -1497,7 +1618,7 @@ const Pricing = ({ onEarlyAccess }) => {
               ))}
             </ul>
             <button
-              onClick={onEarlyAccess}
+              onClick={() => handleSelectPlan('pro')}
               className={`w-full py-2.5 rounded-lg font-medium text-sm transition-all ${darkMode ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
             >
               {lang === 'pl' ? 'Wybierz Pro' : 'Choose Pro'}
@@ -1534,7 +1655,7 @@ const Pricing = ({ onEarlyAccess }) => {
               ))}
             </ul>
             <button
-              onClick={onEarlyAccess}
+              onClick={() => handleSelectPlan('business')}
               className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-500 transition-all"
             >
               {lang === 'pl' ? 'Wybierz Business' : 'Choose Business'}
@@ -1839,11 +1960,11 @@ const Footer = () => {
       ? [{ label: 'Funkcje', href: '#demo' }, { label: 'Cennik', href: '#/early-access' }, { label: 'Demo', href: '#demo' }]
       : [{ label: 'Features', href: '#demo' }, { label: 'Pricing', href: '#/early-access' }, { label: 'Demo', href: '#demo' }],
     company: lang === 'pl'
-      ? [{ label: 'O nas', href: '#' }, { label: 'Kontakt', href: 'mailto:hcklabs.dev@gmail.com' }, { label: 'Blog', href: '#' }]
-      : [{ label: 'About', href: '#' }, { label: 'Contact', href: 'mailto:hcklabs.dev@gmail.com' }, { label: 'Blog', href: '#' }],
+      ? [{ label: 'O nas', href: '#/about' }, { label: 'Historia', href: '#/story' }, { label: 'Kontakt', href: '#/contact' }]
+      : [{ label: 'About', href: '#/about' }, { label: 'Story', href: '#/story' }, { label: 'Contact', href: '#/contact' }],
     legal: lang === 'pl'
-      ? [{ label: 'Regulamin', href: '#' }, { label: 'Prywatność', href: '#' }]
-      : [{ label: 'Terms', href: '#' }, { label: 'Privacy', href: '#' }],
+      ? [{ label: 'Regulamin', href: '#/terms' }, { label: 'Prywatność', href: '#/privacy' }]
+      : [{ label: 'Terms', href: '#/terms' }, { label: 'Privacy', href: '#/privacy' }],
   };
 
   return (
@@ -1917,6 +2038,18 @@ const Footer = () => {
               ))}
             </ul>
           </div>
+        </div>
+
+        {/* Powered By Bar */}
+        <div className={`py-4 mb-4 text-center ${darkMode ? 'bg-slate-800/50' : 'bg-slate-50'} rounded-xl`}>
+          <p className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            Powered by <span className={`font-bold ${darkMode ? 'text-white' : 'text-slate-700'}`}>HCK_Labs</span>
+            <span className="mx-2">|</span>
+            <span className="inline-flex items-center gap-1">
+              Secure Payments by
+              <span className="font-bold text-indigo-500">Stripe</span>
+            </span>
+          </p>
         </div>
 
         {/* Bottom Bar */}
@@ -2140,6 +2273,16 @@ function GuideAIInner() {
         setCurrentPage('early-access');
       } else if (hash === '#/dashboard') {
         setCurrentPage('dashboard');
+      } else if (hash === '#/terms') {
+        setCurrentPage('terms');
+      } else if (hash === '#/privacy') {
+        setCurrentPage('privacy');
+      } else if (hash === '#/about') {
+        setCurrentPage('about');
+      } else if (hash === '#/contact') {
+        setCurrentPage('contact');
+      } else if (hash === '#/story') {
+        setCurrentPage('story');
       } else {
         setCurrentPage('home');
       }
@@ -2171,11 +2314,11 @@ function GuideAIInner() {
       const savedLang = localStorage.getItem('guideai-lang');
       if (savedDark === 'true') setDarkMode(true);
 
+      // PRODUCTION: English is default, respect saved preference only
       if (savedLang) {
         setLang(savedLang);
-      } else if (navigator.language?.startsWith('pl')) {
-        setLang('pl');
       }
+      // English remains default for international audience
     }
   }, []);
 
@@ -2228,6 +2371,31 @@ function GuideAIInner() {
       return null;
     }
     return <Dashboard onOpenChat={handleOpenChatFromDashboard} lang={lang} darkMode={darkMode} />;
+  }
+
+  // Show Terms of Service
+  if (currentPage === 'terms') {
+    return <TermsOfService darkMode={darkMode} />;
+  }
+
+  // Show Privacy Policy
+  if (currentPage === 'privacy') {
+    return <PrivacyPolicy darkMode={darkMode} />;
+  }
+
+  // Show About Page
+  if (currentPage === 'about') {
+    return <AboutPage darkMode={darkMode} />;
+  }
+
+  // Show Contact Page
+  if (currentPage === 'contact') {
+    return <ContactPage darkMode={darkMode} />;
+  }
+
+  // Show Story Page (Building in Public)
+  if (currentPage === 'story') {
+    return <StoryPage darkMode={darkMode} lang={lang} />;
   }
 
   return (
@@ -2286,7 +2454,9 @@ function GuideAIInner() {
 export default function GuideAILanding() {
   return (
     <AuthProvider>
-      <GuideAIInner />
+      <ToastProvider>
+        <GuideAIInner />
+      </ToastProvider>
     </AuthProvider>
   );
 }

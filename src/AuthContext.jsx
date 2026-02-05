@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase, createOrGetProfile } from './supabaseClient';
 
 const AuthContext = createContext();
@@ -15,9 +15,10 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   // Fetch or create profile for user
-  const loadProfile = async (currentUser) => {
+  const loadProfile = useCallback(async (currentUser) => {
     if (!currentUser) {
       setProfile(null);
       return;
@@ -33,28 +34,51 @@ export const AuthProvider = ({ children }) => {
       console.error('Failed to load profile:', err);
       setProfile(null);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!supabase) {
       setLoading(false);
+      setInitialized(true);
       return;
     }
 
-    // Get initial session
-    const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
+    let mounted = true;
 
-        if (currentUser) {
-          await loadProfile(currentUser);
+    // Get initial session with retry logic
+    const initAuth = async (retryCount = 0) => {
+      try {
+        // First check if we have a session in storage
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('Session fetch error:', error);
+          // Try refreshing the session
+          if (retryCount < 2) {
+            const { data: refreshData } = await supabase.auth.refreshSession();
+            if (refreshData?.session && mounted) {
+              setUser(refreshData.session.user);
+              await loadProfile(refreshData.session.user);
+              return;
+            }
+          }
+        }
+
+        if (mounted) {
+          const currentUser = session?.user ?? null;
+          setUser(currentUser);
+
+          if (currentUser) {
+            await loadProfile(currentUser);
+          }
         }
       } catch (error) {
         console.error('Auth init error:', error);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+          setInitialized(true);
+        }
       }
     };
 
@@ -62,25 +86,40 @@ export const AuthProvider = ({ children }) => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth event:', event);
+      console.log('Auth event:', event, session?.user?.email);
+
+      if (!mounted) return;
+
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
-      if (currentUser) {
-        // Create profile on sign up/sign in
-        await loadProfile(currentUser);
-      } else {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (currentUser) {
+          await loadProfile(currentUser);
+        }
+      } else if (event === 'SIGNED_OUT') {
         setProfile(null);
+      } else if (event === 'INITIAL_SESSION') {
+        // Handle initial session from storage
+        if (currentUser) {
+          await loadProfile(currentUser);
+        }
+        setLoading(false);
+        setInitialized(true);
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [loadProfile]);
 
   const value = {
     user,
     profile,
     loading,
+    initialized,
     isAuthenticated: !!user,
     isPro: profile?.plan_type === 'pro' || profile?.plan_type === 'business',
     planType: profile?.plan_type || 'free',

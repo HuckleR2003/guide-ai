@@ -2,12 +2,211 @@ import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   ChevronLeft, QrCode, MessageSquare, Trash2,
-  Smartphone, Eye, Crown, AlertCircle, Loader2, Plus, LogOut,
-  Zap, Database, Sparkles, ExternalLink, Download
+  Smartphone, Eye, Crown, AlertCircle, Plus, LogOut,
+  Zap, Database, Sparkles, ExternalLink, Download, Copy, Check, Rocket
 } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { getDevices, deleteDevice, signOut, PLAN_LIMITS } from './supabaseClient';
 
+// ═══════════════════════════════════════════════════════════════
+// SKELETON COMPONENTS
+// ═══════════════════════════════════════════════════════════════
+const SkeletonCard = ({ darkMode }) => (
+  <div className={`rounded-2xl p-5 border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+    <div className="flex justify-between items-start mb-4">
+      <div className={`w-20 h-20 rounded-xl animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+      <div className={`w-12 h-5 rounded-full animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+    </div>
+    <div className={`h-6 w-3/4 rounded-lg mb-2 animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+    <div className={`h-4 w-1/2 rounded-lg mb-4 animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+    <div className="flex gap-4 mb-4">
+      <div className={`h-4 w-16 rounded animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+      <div className={`h-4 w-24 rounded animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+    </div>
+    <div className="flex gap-2">
+      <div className={`flex-1 h-10 rounded-xl animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+      <div className={`flex-1 h-10 rounded-xl animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+      <div className={`w-10 h-10 rounded-xl animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+    </div>
+  </div>
+);
+
+const SkeletonStats = ({ darkMode }) => (
+  <div className={`rounded-2xl p-5 border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+    <div className="flex justify-between items-center mb-3">
+      <div className={`h-3 w-20 rounded animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+      <div className={`h-5 w-5 rounded animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+    </div>
+    <div className={`h-8 w-16 rounded-lg animate-pulse ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
+  </div>
+);
+
+// ═══════════════════════════════════════════════════════════════
+// EMPTY STATE ILLUSTRATION
+// ═══════════════════════════════════════════════════════════════
+const EmptyStateIllustration = ({ darkMode }) => (
+  <div className="relative w-40 h-40 mx-auto mb-8">
+    {/* Floating elements */}
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className={`w-32 h-32 rounded-3xl rotate-6 ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`} />
+    </div>
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className={`w-32 h-32 rounded-3xl -rotate-6 ${darkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`} />
+    </div>
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className={`w-28 h-28 rounded-2xl flex items-center justify-center ${darkMode ? 'bg-gradient-to-br from-blue-600 to-indigo-700' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
+        <QrCode className="w-14 h-14 text-white/90" />
+      </div>
+    </div>
+    {/* Floating sparkles */}
+    <Sparkles className={`absolute -top-2 -right-2 w-6 h-6 ${darkMode ? 'text-yellow-400' : 'text-yellow-500'} animate-pulse`} />
+    <Rocket className={`absolute -bottom-1 -left-1 w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-500'} animate-bounce`} />
+  </div>
+);
+
+// ═══════════════════════════════════════════════════════════════
+// DEVICE CARD COMPONENT
+// ═══════════════════════════════════════════════════════════════
+const DeviceCard = ({ device, darkMode, lang, t, onSelectQR, onOpenChat, onDelete, isDeleting, index }) => {
+  const [copied, setCopied] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+
+  const deviceUrl = device.qr_url || `${window.location.origin}?device=${encodeURIComponent(`${device.device_name} ${device.device_model}`)}`;
+
+  const handleCopyLink = async (e) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(deviceUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(lang === 'pl' ? 'pl-PL' : 'en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  return (
+    <div
+      className={`group relative rounded-2xl p-5 border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${darkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:shadow-slate-900/50' : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'}`}
+      style={{
+        animationDelay: `${index * 50}ms`,
+        animation: 'fadeSlideIn 0.4s ease-out forwards',
+        opacity: 0,
+      }}
+    >
+      {/* Status Badge */}
+      <div className="absolute top-4 right-4 flex items-center gap-1.5">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+        </span>
+        <span className={`text-xs font-medium ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+          {t.live}
+        </span>
+      </div>
+
+      {/* QR Code Preview with Hover Effect */}
+      <div
+        className="relative w-20 h-20 mb-4 cursor-pointer group/qr"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+        onClick={() => onSelectQR(device)}
+      >
+        <div className={`absolute inset-0 bg-white p-2 rounded-xl shadow-lg transition-all duration-300 ${isHovering ? 'scale-110 shadow-xl' : ''}`}>
+          <QRCodeSVG
+            value={deviceUrl}
+            size={64}
+            level="M"
+          />
+        </div>
+        {/* Copy Link Button (appears on hover) */}
+        <button
+          onClick={handleCopyLink}
+          className={`absolute -bottom-2 -right-2 p-1.5 rounded-lg shadow-lg transition-all duration-200 ${
+            isHovering ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
+          } ${copied
+            ? 'bg-green-500 text-white'
+            : darkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+        </button>
+      </div>
+
+      {/* Device Info */}
+      <h3 className={`font-bold text-lg mb-1 truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+        {device.device_name}
+      </h3>
+      <p className={`text-sm mb-3 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+        {device.device_model}
+      </p>
+
+      {/* Quick Stats */}
+      <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-1.5">
+          <Eye className={`w-4 h-4 ${darkMode ? 'text-slate-600' : 'text-slate-400'}`} />
+          <span className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            {device.scan_count || 0}
+          </span>
+        </div>
+        <span className={`text-xs ${darkMode ? 'text-slate-600' : 'text-slate-400'}`}>
+          {t.created} {formatDate(device.created_at)}
+        </span>
+      </div>
+
+      {/* PDF Badge */}
+      {device.pdf_content && (
+        <div className="mb-4">
+          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${darkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+            <Database className="w-3 h-3" />
+            PDF loaded
+          </span>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => onSelectQR(device)}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-all ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+        >
+          <QrCode className="w-4 h-4" />
+          QR
+        </button>
+        <button
+          onClick={() => onOpenChat(device)}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-medium transition-all hover:from-blue-500 hover:to-indigo-500"
+        >
+          <MessageSquare className="w-4 h-4" />
+          Chat
+        </button>
+        <button
+          onClick={() => onDelete(device.id)}
+          disabled={isDeleting}
+          className={`p-2.5 rounded-xl transition-all disabled:opacity-50 ${darkMode ? 'bg-slate-800 text-slate-500 hover:bg-red-500/20 hover:text-red-400' : 'bg-slate-100 text-slate-400 hover:bg-red-100 hover:text-red-500'}`}
+        >
+          {isDeleting ? (
+            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Trash2 className="w-4 h-4" />
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN DASHBOARD COMPONENT
+// ═══════════════════════════════════════════════════════════════
 export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkMode }) {
   const { user, profile, planType, isPro } = useAuth();
   const [devices, setDevices] = useState([]);
@@ -15,6 +214,7 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
   const [error, setError] = useState('');
   const [selectedQR, setSelectedQR] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const darkMode = propDarkMode !== undefined
     ? propDarkMode
@@ -23,9 +223,9 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
   const t = {
     welcome: lang === 'pl' ? 'Witaj ponownie' : 'Welcome back',
     myDevices: lang === 'pl' ? 'Twoje urządzenia' : 'Your devices',
-    noDevices: lang === 'pl' ? 'Twoja półka jest pusta' : 'Your shelf is empty',
-    addFirst: lang === 'pl' ? 'Dodaj pierwsze urządzenie i zacznij budować bazę wiedzy' : 'Add your first device and start building your knowledge base',
-    goToDemo: lang === 'pl' ? 'Dodaj pierwsze urządzenie' : 'Add your first device',
+    noDevices: lang === 'pl' ? 'Twoje biurko jest gotowe' : 'Your workspace is ready',
+    addFirst: lang === 'pl' ? 'Załaduj pierwszą instrukcję, aby tchnąć w nią życie.' : 'Upload your first manual to bring it to life.',
+    goToDemo: lang === 'pl' ? 'Stwórz pierwszego asystenta' : 'Create your first assistant',
     back: lang === 'pl' ? 'Powrót' : 'Back',
     scans: lang === 'pl' ? 'skanów' : 'scans',
     confirmDelete: lang === 'pl' ? 'Na pewno usunąć to urządzenie?' : 'Delete this device?',
@@ -41,6 +241,8 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
     viewQr: lang === 'pl' ? 'Zobacz QR' : 'View QR',
     openChat: lang === 'pl' ? 'Otwórz czat' : 'Open chat',
     downloadQr: lang === 'pl' ? 'Pobierz' : 'Download',
+    copyLink: lang === 'pl' ? 'Kopiuj link' : 'Copy link',
+    linkCopied: lang === 'pl' ? 'Skopiowano!' : 'Copied!',
     upgradeNow: lang === 'pl' ? 'Ulepsz teraz' : 'Upgrade now',
     usageText: lang === 'pl' ? 'slotów' : 'slots',
     freeSlots: lang === 'pl' ? 'darmowych slotów' : 'free slots',
@@ -58,6 +260,8 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
     try {
       const { data, error: fetchError } = await getDevices(user.id);
       if (fetchError) throw fetchError;
+      // Simulate minimum loading time for smooth skeleton experience
+      await new Promise(resolve => setTimeout(resolve, 500));
       setDevices(data || []);
     } catch (err) {
       setError(err.message || 'Failed to load devices');
@@ -111,13 +315,36 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
     }, 100);
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(lang === 'pl' ? 'pl-PL' : 'en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+  const handleCopyModalLink = async () => {
+    if (!selectedQR) return;
+    const url = selectedQR.qr_url || `${window.location.origin}?device=${encodeURIComponent(`${selectedQR.device_name} ${selectedQR.device_model}`)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleDownloadQR = () => {
+    const svg = document.getElementById('qr-download');
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      const a = document.createElement('a');
+      a.download = `${selectedQR.device_name}-qr.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    };
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
   const getUserDisplayName = () => {
@@ -161,6 +388,20 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
 
   return (
     <div className={`min-h-screen transition-colors ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
+      {/* CSS Animation */}
+      <style>{`
+        @keyframes fadeSlideIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+
       {/* Header */}
       <header className={`sticky top-0 z-40 backdrop-blur-xl border-b ${darkMode ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -226,31 +467,43 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {stats.map((stat, i) => (
-            <div
-              key={i}
-              className={`relative overflow-hidden rounded-2xl p-5 border transition-all hover:scale-[1.02] ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}
-              style={{ animationDelay: `${i * 100}ms` }}
-            >
-              <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-50`} />
-              <div className="relative">
-                <div className="flex items-center justify-between mb-3">
-                  <span className={`text-xs font-medium uppercase tracking-wider ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                    {stat.label}
-                  </span>
-                  <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
+          {loading ? (
+            <>
+              <SkeletonStats darkMode={darkMode} />
+              <SkeletonStats darkMode={darkMode} />
+              <SkeletonStats darkMode={darkMode} />
+            </>
+          ) : (
+            stats.map((stat, i) => (
+              <div
+                key={i}
+                className={`relative overflow-hidden rounded-2xl p-5 border transition-all hover:scale-[1.02] ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}
+                style={{
+                  animation: 'fadeSlideIn 0.4s ease-out forwards',
+                  animationDelay: `${i * 100}ms`,
+                  opacity: 0,
+                }}
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-50`} />
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`text-xs font-medium uppercase tracking-wider ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {stat.label}
+                    </span>
+                    <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
+                  </div>
+                  <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {stat.value}
+                    {stat.suffix && <span className="text-sm font-normal text-slate-500">{stat.suffix}</span>}
+                  </p>
                 </div>
-                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {stat.value}
-                  {stat.suffix && <span className="text-sm font-normal text-slate-500">{stat.suffix}</span>}
-                </p>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Usage Progress Bar */}
-        {!isPro && (
+        {!isPro && !loading && (
           <div className={`mb-8 p-4 rounded-2xl border ${darkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
             <div className="flex items-center justify-between mb-2">
               <span className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
@@ -266,7 +519,27 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
                 style={{ width: `${Math.min(usagePercent, 100)}%` }}
               />
             </div>
-            {usagePercent >= 80 && (
+            {usagePercent >= 100 ? (
+              <div className={`mt-3 p-3 rounded-xl ${darkMode ? 'bg-red-500/10 border border-red-500/30' : 'bg-red-50 border border-red-200'}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className={`w-4 h-4 ${darkMode ? 'text-red-400' : 'text-red-500'}`} />
+                  <span className={`text-sm font-medium ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
+                    {lang === 'pl' ? 'Osiągnięto limit!' : 'Limit reached!'}
+                  </span>
+                </div>
+                <p className={`text-xs mb-2 ${darkMode ? 'text-red-400/70' : 'text-red-500/80'}`}>
+                  {lang === 'pl'
+                    ? 'Aby dodać więcej urządzeń, ulepsz swój plan.'
+                    : 'To add more devices, upgrade your plan.'}
+                </p>
+                <a
+                  href="#/early-access"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-medium rounded-lg transition-all"
+                >
+                  {t.upgradeNow} <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            ) : usagePercent >= 80 && (
               <div className="flex items-center justify-between mt-3">
                 <span className={`text-xs ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
                   {lang === 'pl' ? 'Zbliżasz się do limitu' : 'Approaching limit'}
@@ -295,7 +568,7 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
           <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
             {t.myDevices}
           </h2>
-          {canAddMore && devices.length > 0 && (
+          {canAddMore && !loading && devices.length > 0 && (
             <button
               onClick={handleAddDevice}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-500/25"
@@ -308,26 +581,27 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
 
         {/* Devices Grid */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+          /* Skeleton Loading State */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <SkeletonCard darkMode={darkMode} />
+            <SkeletonCard darkMode={darkMode} />
+            <SkeletonCard darkMode={darkMode} />
           </div>
         ) : devices.length === 0 ? (
-          /* Empty State */
+          /* Premium Empty State */
           <div className={`rounded-3xl p-12 text-center border-2 border-dashed ${darkMode ? 'bg-slate-900/30 border-slate-800' : 'bg-white border-slate-300'}`}>
-            <div className={`w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
-              <QrCode className={`w-10 h-10 ${darkMode ? 'text-slate-600' : 'text-slate-400'}`} />
-            </div>
-            <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            <EmptyStateIllustration darkMode={darkMode} />
+            <h3 className={`text-2xl font-bold mb-3 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               {t.noDevices}
             </h3>
-            <p className={`mb-8 max-w-md mx-auto ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+            <p className={`text-lg mb-8 max-w-md mx-auto ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               {t.addFirst}
             </p>
             <button
               onClick={handleAddDevice}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-500/25"
+              className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl font-semibold text-lg transition-all shadow-xl shadow-blue-500/30 hover:shadow-blue-500/40 hover:scale-105"
             >
-              <Sparkles className="w-5 h-5" />
+              <Sparkles className="w-6 h-6" />
               {t.goToDemo}
             </button>
           </div>
@@ -335,94 +609,18 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
           /* Device Cards Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {devices.map((device, index) => (
-              <div
+              <DeviceCard
                 key={device.id}
-                className={`group relative rounded-2xl p-5 border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${darkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700 hover:shadow-slate-900/50' : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'}`}
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                {/* Status Badge */}
-                <div className="absolute top-4 right-4 flex items-center gap-1.5">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                  </span>
-                  <span className={`text-xs font-medium ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                    {t.live}
-                  </span>
-                </div>
-
-                {/* QR Code Preview */}
-                <div
-                  className="w-20 h-20 bg-white p-2 rounded-xl mb-4 cursor-pointer transition-transform hover:scale-110 shadow-lg"
-                  onClick={() => setSelectedQR(device)}
-                >
-                  <QRCodeSVG
-                    value={device.qr_url || `${window.location.origin}?device=${encodeURIComponent(`${device.device_name} ${device.device_model}`)}`}
-                    size={64}
-                    level="M"
-                  />
-                </div>
-
-                {/* Device Info */}
-                <h3 className={`font-bold text-lg mb-1 truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {device.device_name}
-                </h3>
-                <p className={`text-sm mb-3 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                  {device.device_model}
-                </p>
-
-                {/* Quick Stats */}
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center gap-1.5">
-                    <Eye className={`w-4 h-4 ${darkMode ? 'text-slate-600' : 'text-slate-400'}`} />
-                    <span className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {device.scan_count || 0}
-                    </span>
-                  </div>
-                  <span className={`text-xs ${darkMode ? 'text-slate-600' : 'text-slate-400'}`}>
-                    {t.created} {formatDate(device.created_at)}
-                  </span>
-                </div>
-
-                {/* PDF Badge */}
-                {device.pdf_content && (
-                  <div className="mb-4">
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${darkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
-                      <Database className="w-3 h-3" />
-                      PDF loaded
-                    </span>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setSelectedQR(device)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-all ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
-                  >
-                    <QrCode className="w-4 h-4" />
-                    QR
-                  </button>
-                  <button
-                    onClick={() => handleOpenChat(device)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-medium transition-all hover:from-blue-500 hover:to-indigo-500"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    Chat
-                  </button>
-                  <button
-                    onClick={() => handleDelete(device.id)}
-                    disabled={deletingId === device.id}
-                    className={`p-2.5 rounded-xl transition-all disabled:opacity-50 ${darkMode ? 'bg-slate-800 text-slate-500 hover:bg-red-500/20 hover:text-red-400' : 'bg-slate-100 text-slate-400 hover:bg-red-100 hover:text-red-500'}`}
-                  >
-                    {deletingId === device.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
+                device={device}
+                darkMode={darkMode}
+                lang={lang}
+                t={t}
+                onSelectQR={setSelectedQR}
+                onOpenChat={handleOpenChat}
+                onDelete={handleDelete}
+                isDeleting={deletingId === device.id}
+                index={index}
+              />
             ))}
           </div>
         )}
@@ -459,7 +657,7 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
             </p>
 
             {/* Actions */}
-            <div className="flex gap-3">
+            <div className="flex gap-2 mb-3">
               <button
                 onClick={() => setSelectedQR(null)}
                 className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'bg-slate-800 text-white hover:bg-slate-700' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}
@@ -467,31 +665,26 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
                 {t.closeQr}
               </button>
               <button
-                onClick={() => {
-                  const svg = document.getElementById('qr-download');
-                  const svgData = new XMLSerializer().serializeToString(svg);
-                  const canvas = document.createElement('canvas');
-                  const ctx = canvas.getContext('2d');
-                  const img = new Image();
-                  img.onload = () => {
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.fillStyle = 'white';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0);
-                    const a = document.createElement('a');
-                    a.download = `${selectedQR.device_name}-qr.png`;
-                    a.href = canvas.toDataURL('image/png');
-                    a.click();
-                  };
-                  img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
-                }}
+                onClick={handleDownloadQR}
                 className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-medium transition-all hover:from-blue-500 hover:to-indigo-500"
               >
                 <Download className="w-4 h-4" />
                 {t.downloadQr}
               </button>
             </div>
+
+            {/* Copy Link Button */}
+            <button
+              onClick={handleCopyModalLink}
+              className={`w-full py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                linkCopied
+                  ? 'bg-green-500 text-white'
+                  : darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {linkCopied ? t.linkCopied : t.copyLink}
+            </button>
           </div>
         </div>
       )}

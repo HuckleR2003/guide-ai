@@ -7,13 +7,40 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase credentials missing. Auth features will be disabled.');
 }
 
+// Custom storage using localStorage with fallback
+const customStorage = {
+  getItem: (key) => {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      console.warn('localStorage not available');
+    }
+  },
+  removeItem: (key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      console.warn('localStorage not available');
+    }
+  },
+};
+
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
-        storageKey: 'guideai-auth',
+        storageKey: 'guideai-auth-token',
+        storage: customStorage,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        flowType: 'pkce',
       },
     })
   : null;
@@ -212,4 +239,60 @@ export const canSaveMoreDevices = async (userId, planType) => {
 
   const { data } = await getDevices(userId);
   return data.length < limit;
+};
+
+// ═══════════════════════════════════════════════════════════════
+// STRIPE PAYMENT INTEGRATION
+// ═══════════════════════════════════════════════════════════════
+
+// Stripe Payment Links (replace with your actual Stripe payment links)
+export const STRIPE_LINKS = {
+  pro: 'https://buy.stripe.com/test_YOUR_PRO_LINK', // Replace with actual Stripe link
+  business: 'https://buy.stripe.com/test_YOUR_BUSINESS_LINK', // Replace with actual Stripe link
+};
+
+// Plan prices for display
+export const PLAN_PRICES = {
+  free: { monthly: 0, yearly: 0 },
+  pro: { monthly: 19, yearly: 190 }, // ~17% discount yearly
+  business: { monthly: 49, yearly: 490 },
+};
+
+// Upgrade user plan (called after successful Stripe webhook or manual upgrade)
+export const upgradePlan = async (userId, newPlanType) => {
+  if (!supabase) return { error: { message: 'Supabase not configured' } };
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({
+      plan_type: newPlanType,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId)
+    .select()
+    .single();
+
+  return { data, error };
+};
+
+// Generate Stripe checkout URL with user metadata
+export const getCheckoutUrl = (plan, userId, userEmail) => {
+  const baseUrl = STRIPE_LINKS[plan];
+  if (!baseUrl) return null;
+
+  // Append user info as URL params for Stripe metadata
+  const params = new URLSearchParams({
+    client_reference_id: userId,
+    prefilled_email: userEmail || '',
+  });
+
+  return `${baseUrl}?${params.toString()}`;
+};
+
+// Verify payment status (placeholder for webhook handling)
+export const verifyPaymentStatus = async (sessionId) => {
+  // This would typically call a Supabase Edge Function
+  // that verifies the Stripe session and updates the user's plan
+  console.log('Verify payment for session:', sessionId);
+  return { success: true };
 };
