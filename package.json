@@ -13,6 +13,7 @@
     "@supabase/supabase-js": "^2.93.3",
     "@tailwindcss/postcss": "^4.1.18",
     "@tailwindcss/vite": "^4.1.18",
+    "canvas-confetti": "^1.9.4",
     "lucide-react": "^0.563.0",
     "pdfjs-dist": "^5.4.624",
     "qrcode.react": "^4.2.0",
