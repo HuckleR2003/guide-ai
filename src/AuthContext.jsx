@@ -17,8 +17,9 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const mountedRef = useRef(true);
+  const profileLoadedRef = useRef(false);
 
-  // Fetch or create profile for user
+  // Fetch or create profile - never blocks auth flow
   const loadProfile = useCallback(async (currentUser) => {
     if (!currentUser || !mountedRef.current) {
       if (mountedRef.current) setProfile(null);
@@ -28,23 +29,41 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data: profileData, error } = await createOrGetProfile(currentUser);
       if (error) {
-        console.error('Profile error:', error);
+        console.warn('Profile load failed (RLS?):', error.message);
+        // Build a fallback profile from user_metadata so UI is never empty
+        const fallback = {
+          id: currentUser.id,
+          email: currentUser.email,
+          full_name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || null,
+          avatar_url: currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || null,
+          plan_type: 'free',
+        };
+        if (mountedRef.current) setProfile(fallback);
+        return fallback;
       }
       if (mountedRef.current) {
         setProfile(profileData);
+        profileLoadedRef.current = true;
       }
       return profileData;
     } catch (err) {
-      console.error('Failed to load profile:', err);
-      if (mountedRef.current) {
-        setProfile(null);
-      }
-      return null;
+      console.warn('Profile exception:', err.message);
+      // Fallback so UI doesn't break
+      const fallback = {
+        id: currentUser.id,
+        email: currentUser.email,
+        full_name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || null,
+        avatar_url: currentUser.user_metadata?.avatar_url || currentUser.user_metadata?.picture || null,
+        plan_type: 'free',
+      };
+      if (mountedRef.current) setProfile(fallback);
+      return fallback;
     }
   }, []);
 
   useEffect(() => {
     mountedRef.current = true;
+    profileLoadedRef.current = false;
 
     if (!supabase) {
       setLoading(false);
@@ -53,18 +72,18 @@ export const AuthProvider = ({ children }) => {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // FAST INITIAL CHECK - localStorage for instant UI
+    // FAST INITIAL CHECK - show cached user instantly
     // ═══════════════════════════════════════════════════════════════
     try {
-      const storedSession = localStorage.getItem('guideai-auth-token');
-      if (storedSession) {
-        const parsed = JSON.parse(storedSession);
+      const stored = localStorage.getItem('guideai-auth-token');
+      if (stored) {
+        const parsed = JSON.parse(stored);
         if (parsed?.user) {
           setUser(parsed.user);
         }
       }
     } catch (e) {
-      // Ignore parse errors
+      // ignore
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -75,7 +94,7 @@ export const AuthProvider = ({ children }) => {
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
-          console.error('Session fetch error:', error);
+          console.warn('getSession error:', error.message);
           try {
             const { data: refreshData } = await supabase.auth.refreshSession();
             if (refreshData?.session && mountedRef.current) {
@@ -83,15 +102,14 @@ export const AuthProvider = ({ children }) => {
               await loadProfile(refreshData.session.user);
               return;
             }
-          } catch (refreshErr) {
-            console.error('Session refresh error:', refreshErr);
+          } catch (e) {
+            console.warn('refreshSession error:', e.message);
           }
         }
 
         if (mountedRef.current) {
           const currentUser = session?.user ?? null;
           setUser(currentUser);
-
           if (currentUser) {
             await loadProfile(currentUser);
           } else {
@@ -119,36 +137,43 @@ export const AuthProvider = ({ children }) => {
     // ═══════════════════════════════════════════════════════════════
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mountedRef.current) return;
+      console.log('[Auth]', event, session?.user?.email || 'no user');
 
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        if (currentUser) {
-          await loadProfile(currentUser);
-        }
-        if (mountedRef.current) {
-          setLoading(false);
-          setInitialized(true);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        if (mountedRef.current) {
-          setProfile(null);
-          setUser(null);
-          setLoading(false);
-        }
-      } else if (event === 'INITIAL_SESSION') {
-        if (currentUser) {
-          await loadProfile(currentUser);
-        }
-        if (mountedRef.current) {
-          setLoading(false);
-          setInitialized(true);
-        }
-      } else if (event === 'USER_UPDATED') {
-        if (currentUser) {
-          await loadProfile(currentUser);
-        }
+      switch (event) {
+        case 'SIGNED_IN':
+        case 'TOKEN_REFRESHED':
+          if (currentUser) await loadProfile(currentUser);
+          if (mountedRef.current) {
+            setLoading(false);
+            setInitialized(true);
+          }
+          break;
+
+        case 'SIGNED_OUT':
+          if (mountedRef.current) {
+            setProfile(null);
+            setUser(null);
+            setLoading(false);
+          }
+          break;
+
+        case 'INITIAL_SESSION':
+          if (currentUser) await loadProfile(currentUser);
+          if (mountedRef.current) {
+            setLoading(false);
+            setInitialized(true);
+          }
+          break;
+
+        case 'USER_UPDATED':
+          if (currentUser) await loadProfile(currentUser);
+          break;
+
+        default:
+          break;
       }
     });
 
@@ -159,8 +184,19 @@ export const AuthProvider = ({ children }) => {
   }, [loadProfile]);
 
   // ═══════════════════════════════════════════════════════════════
-  // CONTEXT VALUE
+  // DERIVED VALUES - always safe, never null when user exists
   // ═══════════════════════════════════════════════════════════════
+  const displayName = profile?.full_name?.split(' ')[0]
+    || user?.user_metadata?.full_name?.split(' ')[0]
+    || user?.user_metadata?.name?.split(' ')[0]
+    || user?.email?.split('@')[0]
+    || 'User';
+
+  const avatarUrl = profile?.avatar_url
+    || user?.user_metadata?.avatar_url
+    || user?.user_metadata?.picture
+    || null;
+
   const value = {
     user,
     profile,
@@ -169,31 +205,11 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     isPro: profile?.plan_type === 'pro' || profile?.plan_type === 'business',
     planType: profile?.plan_type || 'free',
-
-    displayName: profile?.full_name?.split(' ')[0]
-      || user?.user_metadata?.full_name?.split(' ')[0]
-      || user?.user_metadata?.name?.split(' ')[0]
-      || user?.email?.split('@')[0]
-      || 'User',
-
-    fullName: profile?.full_name
-      || user?.user_metadata?.full_name
-      || user?.user_metadata?.name
-      || '',
-
-    avatarUrl: profile?.avatar_url
-      || user?.user_metadata?.avatar_url
-      || user?.user_metadata?.picture
-      || null,
-
+    displayName,
+    fullName: profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || '',
+    avatarUrl,
     email: user?.email || '',
-
-    refreshProfile: async () => {
-      if (user) {
-        return await loadProfile(user);
-      }
-      return null;
-    },
+    refreshProfile: async () => user ? await loadProfile(user) : null,
   };
 
   return (

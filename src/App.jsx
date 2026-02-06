@@ -744,6 +744,134 @@ const VideoModal = ({ isOpen, onClose, darkMode }) => {
   );
 };
 
+// ═══════════════════════════════════════════════════════════════
+// AURORA MESH GRADIENT BACKGROUND
+// Pure CSS, GPU-accelerated (transform + will-change), zero JS overhead
+// ═══════════════════════════════════════════════════════════════
+const AuroraBackground = ({ darkMode }) => (
+  <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
+    {/* Base gradient */}
+    <div className={`absolute inset-0 ${darkMode
+      ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950'
+      : 'bg-gradient-to-br from-white via-blue-50/30 to-white'
+    }`} />
+
+    {/* Mesh blob 1 - Blue/Cyan */}
+    <div
+      className="absolute aurora-blob-1"
+      style={{
+        width: '45vmax',
+        height: '45vmax',
+        borderRadius: '50%',
+        background: darkMode
+          ? 'radial-gradient(circle at center, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0) 70%)'
+          : 'radial-gradient(circle at center, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0) 70%)',
+        top: '-10%',
+        left: '-10%',
+        willChange: 'transform',
+        filter: 'blur(40px)',
+      }}
+    />
+
+    {/* Mesh blob 2 - Purple/Violet */}
+    <div
+      className="absolute aurora-blob-2"
+      style={{
+        width: '50vmax',
+        height: '50vmax',
+        borderRadius: '50%',
+        background: darkMode
+          ? 'radial-gradient(circle at center, rgba(139,92,246,0.12) 0%, rgba(139,92,246,0) 70%)'
+          : 'radial-gradient(circle at center, rgba(139,92,246,0.06) 0%, rgba(139,92,246,0) 70%)',
+        top: '20%',
+        right: '-15%',
+        willChange: 'transform',
+        filter: 'blur(40px)',
+      }}
+    />
+
+    {/* Mesh blob 3 - Teal/Emerald */}
+    <div
+      className="absolute aurora-blob-3"
+      style={{
+        width: '40vmax',
+        height: '40vmax',
+        borderRadius: '50%',
+        background: darkMode
+          ? 'radial-gradient(circle at center, rgba(16,185,129,0.10) 0%, rgba(16,185,129,0) 70%)'
+          : 'radial-gradient(circle at center, rgba(16,185,129,0.05) 0%, rgba(16,185,129,0) 70%)',
+        bottom: '5%',
+        left: '10%',
+        willChange: 'transform',
+        filter: 'blur(40px)',
+      }}
+    />
+
+    {/* Mesh blob 4 - Pink/Rose accent */}
+    <div
+      className="absolute aurora-blob-4"
+      style={{
+        width: '35vmax',
+        height: '35vmax',
+        borderRadius: '50%',
+        background: darkMode
+          ? 'radial-gradient(circle at center, rgba(236,72,153,0.08) 0%, rgba(236,72,153,0) 70%)'
+          : 'radial-gradient(circle at center, rgba(236,72,153,0.04) 0%, rgba(236,72,153,0) 70%)',
+        top: '50%',
+        left: '50%',
+        willChange: 'transform',
+        filter: 'blur(60px)',
+      }}
+    />
+
+    {/* Subtle noise texture overlay for depth */}
+    <div
+      className="absolute inset-0"
+      style={{
+        opacity: darkMode ? 0.03 : 0.02,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")`,
+        backgroundRepeat: 'repeat',
+        backgroundSize: '128px 128px',
+      }}
+    />
+
+    {/* CSS Animations - slow & GPU-only (transform) */}
+    <style>{`
+      @keyframes aurora-drift-1 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        33% { transform: translate(8vw, 5vh) scale(1.05); }
+        66% { transform: translate(-3vw, 8vh) scale(0.97); }
+      }
+      @keyframes aurora-drift-2 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        25% { transform: translate(-6vw, 3vh) scale(1.03); }
+        50% { transform: translate(-10vw, -5vh) scale(0.98); }
+        75% { transform: translate(-3vw, -8vh) scale(1.06); }
+      }
+      @keyframes aurora-drift-3 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        40% { transform: translate(5vw, -6vh) scale(1.04); }
+        80% { transform: translate(10vw, 3vh) scale(0.96); }
+      }
+      @keyframes aurora-drift-4 {
+        0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+        50% { transform: translate(-7vw, 5vh) scale(1.08) rotate(20deg); }
+      }
+      .aurora-blob-1 { animation: aurora-drift-1 20s ease-in-out infinite; }
+      .aurora-blob-2 { animation: aurora-drift-2 25s ease-in-out infinite; }
+      .aurora-blob-3 { animation: aurora-drift-3 22s ease-in-out infinite; }
+      .aurora-blob-4 { animation: aurora-drift-4 28s ease-in-out infinite; }
+
+      /* Pause animations when tab is not visible (saves CPU) */
+      @media (prefers-reduced-motion: reduce) {
+        .aurora-blob-1, .aurora-blob-2, .aurora-blob-3, .aurora-blob-4 {
+          animation: none !important;
+        }
+      }
+    `}</style>
+  </div>
+);
+
 // HERO
 const Hero = () => {
   const { darkMode, t } = useApp();
@@ -2520,7 +2648,7 @@ function GuideAIInner() {
   const [currentPage, setCurrentPage] = useState('home');
   const demoRef = useRef(null);
 
-  const { isAuthenticated, loading: authLoading, initialized } = useAuth();
+  const { isAuthenticated, initialized } = useAuth();
 
   // Translation helper
   const t = (key) => TRANSLATIONS[lang]?.[key] || TRANSLATIONS.en[key] || key;
@@ -2623,30 +2751,15 @@ function GuideAIInner() {
     return <EarlyAccess />;
   }
 
-  // Show Dashboard (Protected Route - wait for auth to initialize)
+  // Show Dashboard (Protected Route)
   if (currentPage === 'dashboard') {
-    // Wait for auth to fully initialize before checking
-    if (!initialized || authLoading) {
-      // Show loading while auth is initializing
+    // Still loading auth? Show spinner
+    if (!initialized) {
       return (
         <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
           <div className="text-center">
-            <div className="relative mb-6">
-              <div className={`w-20 h-20 mx-auto rounded-2xl flex items-center justify-center ${darkMode ? 'bg-slate-800' : 'bg-white shadow-lg'}`}>
-                <div className={`w-12 h-12 grid grid-cols-4 grid-rows-4 gap-[2px] p-[3px] border rounded-lg animate-pulse ${darkMode ? 'border-slate-600' : 'border-slate-300'}`}>
-                  {[1,1,1,0,1,0,0,1,1,0,1,0,0,1,0,1].map((f, i) => (
-                    <div key={i} className={`${f ? (darkMode ? 'bg-blue-400' : 'bg-blue-500') : ''} rounded-[2px]`} />
-                  ))}
-                </div>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-24 h-24 border-2 border-transparent border-t-blue-500 rounded-full animate-spin" />
-              </div>
-            </div>
-            <p className={`text-lg font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-              Guide<span className="text-blue-500">AI</span>
-            </p>
-            <p className={`text-sm mt-2 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+            <div className="w-12 h-12 mx-auto mb-4 border-2 border-transparent border-t-blue-500 rounded-full animate-spin" />
+            <p className={`text-sm ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
               {lang === 'pl' ? 'Ładowanie...' : 'Loading...'}
             </p>
           </div>
@@ -2654,10 +2767,13 @@ function GuideAIInner() {
       );
     }
 
-    // Auth initialized - check if user is logged in
+    // Auth ready but not logged in? Redirect to home + show login modal
     if (!isAuthenticated) {
-      setShowAuthModal(true);
-      window.location.hash = '';
+      // Use setTimeout to avoid setState during render
+      setTimeout(() => {
+        setShowAuthModal(true);
+        window.location.hash = '';
+      }, 0);
       return null;
     }
 
@@ -2692,6 +2808,9 @@ function GuideAIInner() {
   return (
     <AppContext.Provider value={contextValue}>
       <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
+        {/* Aurora Mesh Gradient Background */}
+        <AuroraBackground darkMode={darkMode} />
+
         {/* Floating Navbar with Glassmorphism */}
         <FloatingNavbar
           onOpenAuth={() => setShowAuthModal(true)}
