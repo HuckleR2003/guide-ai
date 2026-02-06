@@ -40,7 +40,7 @@ export const supabase = supabaseUrl && supabaseAnonKey
         storage: customStorage,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        flowType: 'pkce',
+        flowType: 'implicit',
       },
     })
   : null;
