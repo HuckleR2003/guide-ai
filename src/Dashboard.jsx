@@ -206,7 +206,18 @@ const DeviceCard = ({ device, darkMode, lang, t, onSelectQR, onOpenChat, onDelet
 // MAIN DASHBOARD COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkMode }) {
-  const { user, profile, planType, isPro } = useAuth();
+  const {
+    user,
+    profile,
+    planType,
+    isPro,
+    initialized,
+    loading: authLoading,
+    displayName,
+    avatarUrl,
+    email
+  } = useAuth();
+
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -219,6 +230,7 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
     : (typeof window !== 'undefined' && localStorage.getItem('guideai-dark') === 'true');
 
   const t = {
+    heyDear: lang === 'pl' ? 'Hej kochany' : 'Hey dear',
     welcome: lang === 'pl' ? 'Witaj ponownie' : 'Welcome back',
     myDevices: lang === 'pl' ? 'Twoje urządzenia' : 'Your devices',
     noDevices: lang === 'pl' ? 'Twoje biurko jest gotowe' : 'Your workspace is ready',
@@ -246,11 +258,15 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
     freeSlots: lang === 'pl' ? 'darmowych slotów' : 'free slots',
   };
 
+  // Wait for auth to be fully initialized before loading devices
   useEffect(() => {
-    if (user) {
+    if (initialized && user) {
       loadDevices();
+    } else if (initialized && !user) {
+      // Auth finished but no user - stop loading
+      setLoading(false);
     }
-  }, [user]);
+  }, [initialized, user]);
 
   const loadDevices = async () => {
     setLoading(true);
@@ -345,11 +361,8 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
-  const getUserDisplayName = () => {
-    if (profile?.full_name) return profile.full_name.split(' ')[0];
-    if (user?.email) return user.email.split('@')[0];
-    return 'User';
-  };
+  // Using displayName from AuthContext now
+  const getUserDisplayName = () => displayName;
 
   const limit = PLAN_LIMITS[planType] || PLAN_LIMITS.free;
   const usedSlots = devices.length;
@@ -383,6 +396,36 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
       iconColor: 'text-purple-400',
     },
   ];
+
+  // Show loading screen while auth is initializing
+  if (!initialized || authLoading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
+        <div className="text-center">
+          {/* Animated Logo */}
+          <div className="relative mb-6">
+            <div className={`w-20 h-20 mx-auto rounded-2xl flex items-center justify-center ${darkMode ? 'bg-slate-800' : 'bg-white shadow-lg'}`}>
+              <div className={`w-12 h-12 grid grid-cols-4 grid-rows-4 gap-[2px] p-[3px] border rounded-lg animate-pulse ${darkMode ? 'border-slate-600' : 'border-slate-300'}`}>
+                {[1,1,1,0,1,0,0,1,1,0,1,0,0,1,0,1].map((f, i) => (
+                  <div key={i} className={`${f ? (darkMode ? 'bg-blue-400' : 'bg-blue-500') : ''} rounded-[2px] transition-all`} style={{ animationDelay: `${i * 50}ms` }} />
+                ))}
+              </div>
+            </div>
+            {/* Spinning ring */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-24 h-24 border-2 border-transparent border-t-blue-500 rounded-full animate-spin" />
+            </div>
+          </div>
+          <p className={`text-lg font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            Guide<span className="text-blue-500">AI</span>
+          </p>
+          <p className={`text-sm mt-2 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+            {lang === 'pl' ? 'Ładowanie...' : 'Loading...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen transition-colors ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
@@ -446,26 +489,38 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* Welcome Section */}
+        {/* Welcome Section with "Hey dear!" */}
         <div className="mb-8">
           <div className="flex items-center gap-4">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt="Avatar"
-                className="w-16 h-16 rounded-2xl border-2 border-slate-700 shadow-xl"
-              />
-            ) : (
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl ${isPro ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white' : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white'}`}>
-                {getUserDisplayName().charAt(0).toUpperCase()}
+            {/* Avatar with cute mascot overlay */}
+            <div className="relative">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Avatar"
+                  className={`w-16 h-16 rounded-2xl border-2 shadow-xl object-cover ${darkMode ? 'border-slate-700' : 'border-slate-200'}`}
+                />
+              ) : (
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl ${isPro ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white' : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white'}`}>
+                  {getUserDisplayName().charAt(0).toUpperCase()}
+                </div>
+              )}
+              {/* Cute mascot badge */}
+              <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full flex items-center justify-center text-xs shadow-lg border-2 border-white dark:border-slate-900">
+                <span role="img" aria-label="mascot">🤖</span>
               </div>
-            )}
+            </div>
+
             <div>
+              {/* Hey dear! greeting */}
+              <p className={`text-sm font-medium mb-0.5 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                {t.heyDear}! ✨
+              </p>
               <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                 {t.welcome}, {getUserDisplayName()}
               </h1>
               <div className="flex items-center gap-2 mt-1">
-                <span className={`text-sm ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>{user?.email}</span>
+                <span className={`text-sm ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>{email}</span>
                 {isPro && (
                   <span className="px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full flex items-center gap-1">
                     <Crown className="w-3 h-3" /> PRO

@@ -678,36 +678,124 @@ const Header = () => {
   );
 };
 
+// VIDEO MODAL COMPONENT
+const VideoModal = ({ isOpen, onClose, darkMode }) => {
+  if (!isOpen) return null;
+
+  // YouTube Shorts embed URL (converted from shorts URL)
+  const videoId = 'NSmOkN65Ih8';
+  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/80 backdrop-blur-md animate-fadeIn"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className={`relative w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-scaleIn ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className={`absolute top-4 right-4 z-10 p-2 rounded-full transition-all ${darkMode ? 'bg-slate-800/80 hover:bg-slate-700 text-white' : 'bg-white/80 hover:bg-white text-slate-900'} shadow-lg`}
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Video container (9:16 aspect ratio for Shorts) */}
+        <div className="relative w-full" style={{ paddingBottom: '177.78%' }}>
+          <iframe
+            className="absolute inset-0 w-full h-full"
+            src={embedUrl}
+            title="GuideAI Demo"
+            style={{ border: 'none' }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+
+        {/* Footer */}
+        <div className={`p-4 text-center ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+          <p className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+            GuideAI Demo
+          </p>
+          <p className={`text-xs mt-1 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+            Zobacz jak działa
+          </p>
+        </div>
+      </div>
+
+      {/* Animation styles */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.9) translateY(20px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
+        .animate-scaleIn { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      `}</style>
+    </div>
+  );
+};
+
 // HERO
 const Hero = () => {
   const { darkMode, t } = useApp();
+  const [showVideoModal, setShowVideoModal] = useState(false);
+
   return (
-    <section className="px-6 py-6">
-      <div className="max-w-4xl mx-auto text-center">
-        <h2 className={`text-4xl md:text-5xl font-bold leading-tight mb-4 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-          {t('tagline')}
-          <span className="block text-blue-500">{t('taglineHighlight')}</span>
-        </h2>
-        <p className={`text-lg max-w-2xl mx-auto mb-6 leading-relaxed ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-          {t('subtitle')}
-        </p>
-        <div className="flex justify-center mb-6">
-          <p className={`text-sm font-bold tracking-wide ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-            Device, QR, and <span className="bg-yellow-400 text-slate-900 px-2 py-0.5 rounded">Chat!</span>
+    <>
+      <section className="px-6 py-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className={`text-4xl md:text-5xl font-bold leading-tight mb-4 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            {t('tagline')}
+            <span className="block text-blue-500">{t('taglineHighlight')}</span>
+          </h2>
+          <p className={`text-lg max-w-2xl mx-auto mb-6 leading-relaxed ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            {t('subtitle')}
           </p>
+          <div className="flex justify-center mb-6">
+            <p className={`text-sm font-bold tracking-wide ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              Device, QR, and <span className="bg-yellow-400 text-slate-900 px-2 py-0.5 rounded">Chat!</span>
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button className={`group flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${darkMode ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>
+              {t('tryFree')}
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+
+            {/* Demo button with video modal trigger */}
+            <div className="flex flex-col items-center">
+              <button
+                onClick={() => setShowVideoModal(true)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all hover:scale-105 ${darkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
+              >
+                <QrCode className="w-4 h-4" />
+                {t('seeDemo')}
+              </button>
+              {/* Small "Kliknij, video!" text */}
+              <span className={`text-[10px] mt-1 animate-pulse ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>
+                Kliknij, video!
+              </span>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <button className={`group flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${darkMode ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>
-            {t('tryFree')}
-            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
-          <button className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-colors ${darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
-            <QrCode className="w-4 h-4" />
-            {t('seeDemo')}
-          </button>
-        </div>
-      </div>
-    </section>
+      </section>
+
+      {/* Video Modal */}
+      <VideoModal
+        isOpen={showVideoModal}
+        onClose={() => setShowVideoModal(false)}
+        darkMode={darkMode}
+      />
+    </>
   );
 };
 
@@ -2441,7 +2529,7 @@ function GuideAIInner() {
   const [currentPage, setCurrentPage] = useState('home');
   const demoRef = useRef(null);
 
-  const { user, isAuthenticated, isPro, planType } = useAuth();
+  const { isAuthenticated, loading: authLoading, initialized } = useAuth();
 
   // Translation helper
   const t = (key) => TRANSLATIONS[lang]?.[key] || TRANSLATIONS.en[key] || key;
@@ -2544,13 +2632,44 @@ function GuideAIInner() {
     return <EarlyAccess />;
   }
 
-  // Show Dashboard (only for authenticated users)
+  // Show Dashboard (Protected Route - wait for auth to initialize)
   if (currentPage === 'dashboard') {
+    // Wait for auth to fully initialize before checking
+    if (!initialized || authLoading) {
+      // Show loading while auth is initializing
+      return (
+        <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
+          <div className="text-center">
+            <div className="relative mb-6">
+              <div className={`w-20 h-20 mx-auto rounded-2xl flex items-center justify-center ${darkMode ? 'bg-slate-800' : 'bg-white shadow-lg'}`}>
+                <div className={`w-12 h-12 grid grid-cols-4 grid-rows-4 gap-[2px] p-[3px] border rounded-lg animate-pulse ${darkMode ? 'border-slate-600' : 'border-slate-300'}`}>
+                  {[1,1,1,0,1,0,0,1,1,0,1,0,0,1,0,1].map((f, i) => (
+                    <div key={i} className={`${f ? (darkMode ? 'bg-blue-400' : 'bg-blue-500') : ''} rounded-[2px]`} />
+                  ))}
+                </div>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-24 h-24 border-2 border-transparent border-t-blue-500 rounded-full animate-spin" />
+              </div>
+            </div>
+            <p className={`text-lg font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              Guide<span className="text-blue-500">AI</span>
+            </p>
+            <p className={`text-sm mt-2 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+              {lang === 'pl' ? 'Ładowanie...' : 'Loading...'}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Auth initialized - check if user is logged in
     if (!isAuthenticated) {
       setShowAuthModal(true);
       window.location.hash = '';
       return null;
     }
+
     return <Dashboard onOpenChat={handleOpenChatFromDashboard} lang={lang} darkMode={darkMode} />;
   }
 
