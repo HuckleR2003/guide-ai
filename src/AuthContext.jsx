@@ -17,12 +17,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const mountedRef = useRef(true);
-  const initializingRef = useRef(false);
 
   // Fetch or create profile for user
   const loadProfile = useCallback(async (currentUser) => {
     if (!currentUser || !mountedRef.current) {
-      setProfile(null);
+      if (mountedRef.current) setProfile(null);
       return null;
     }
 
@@ -53,35 +52,19 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    // Prevent double initialization
-    if (initializingRef.current) return;
-    initializingRef.current = true;
-
     // ═══════════════════════════════════════════════════════════════
-    // FAST INITIAL CHECK - Check localStorage first for instant UI
+    // FAST INITIAL CHECK - localStorage for instant UI
     // ═══════════════════════════════════════════════════════════════
-    const checkStoredSession = () => {
-      try {
-        const storedSession = localStorage.getItem('guideai-auth-token');
-        if (storedSession) {
-          const parsed = JSON.parse(storedSession);
-          if (parsed?.user) {
-            // Show user immediately while we verify
-            setUser(parsed.user);
-            return true;
-          }
+    try {
+      const storedSession = localStorage.getItem('guideai-auth-token');
+      if (storedSession) {
+        const parsed = JSON.parse(storedSession);
+        if (parsed?.user) {
+          setUser(parsed.user);
         }
-      } catch (e) {
-        // Ignore parse errors
       }
-      return false;
-    };
-
-    const hasStoredSession = checkStoredSession();
-
-    // If we have stored session, show content faster
-    if (hasStoredSession) {
-      setLoading(false);
+    } catch (e) {
+      // Ignore parse errors
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -89,17 +72,19 @@ export const AuthProvider = ({ children }) => {
     // ═══════════════════════════════════════════════════════════════
     const initAuth = async () => {
       try {
-        // Get and verify actual session from Supabase
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
           console.error('Session fetch error:', error);
-          // Try refreshing
-          const { data: refreshData } = await supabase.auth.refreshSession();
-          if (refreshData?.session && mountedRef.current) {
-            setUser(refreshData.session.user);
-            await loadProfile(refreshData.session.user);
-            return;
+          try {
+            const { data: refreshData } = await supabase.auth.refreshSession();
+            if (refreshData?.session && mountedRef.current) {
+              setUser(refreshData.session.user);
+              await loadProfile(refreshData.session.user);
+              return;
+            }
+          } catch (refreshErr) {
+            console.error('Session refresh error:', refreshErr);
           }
         }
 
@@ -113,8 +98,8 @@ export const AuthProvider = ({ children }) => {
             setProfile(null);
           }
         }
-      } catch (error) {
-        console.error('Auth init error:', error);
+      } catch (err) {
+        console.error('Auth init error:', err);
         if (mountedRef.current) {
           setUser(null);
           setProfile(null);
@@ -127,61 +112,43 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Start initialization
     initAuth();
 
     // ═══════════════════════════════════════════════════════════════
-    // AUTH STATE LISTENER - Handle sign in/out events
+    // AUTH STATE LISTENER
     // ═══════════════════════════════════════════════════════════════
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth event:', event, session?.user?.email);
-
       if (!mountedRef.current) return;
 
       const currentUser = session?.user ?? null;
-
-      // Update user state immediately
       setUser(currentUser);
 
-      switch (event) {
-        case 'SIGNED_IN':
-        case 'TOKEN_REFRESHED':
-          if (currentUser) {
-            await loadProfile(currentUser);
-          }
-          // Ensure loading is false after sign in
-          if (mountedRef.current) {
-            setLoading(false);
-            setInitialized(true);
-          }
-          break;
-
-        case 'SIGNED_OUT':
-          if (mountedRef.current) {
-            setProfile(null);
-            setLoading(false);
-          }
-          break;
-
-        case 'INITIAL_SESSION':
-          // This fires when page loads with existing session
-          if (currentUser) {
-            await loadProfile(currentUser);
-          }
-          if (mountedRef.current) {
-            setLoading(false);
-            setInitialized(true);
-          }
-          break;
-
-        case 'USER_UPDATED':
-          if (currentUser) {
-            await loadProfile(currentUser);
-          }
-          break;
-
-        default:
-          break;
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (currentUser) {
+          await loadProfile(currentUser);
+        }
+        if (mountedRef.current) {
+          setLoading(false);
+          setInitialized(true);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        if (mountedRef.current) {
+          setProfile(null);
+          setUser(null);
+          setLoading(false);
+        }
+      } else if (event === 'INITIAL_SESSION') {
+        if (currentUser) {
+          await loadProfile(currentUser);
+        }
+        if (mountedRef.current) {
+          setLoading(false);
+          setInitialized(true);
+        }
+      } else if (event === 'USER_UPDATED') {
+        if (currentUser) {
+          await loadProfile(currentUser);
+        }
       }
     });
 
@@ -203,7 +170,6 @@ export const AuthProvider = ({ children }) => {
     isPro: profile?.plan_type === 'pro' || profile?.plan_type === 'business',
     planType: profile?.plan_type || 'free',
 
-    // User display helpers
     displayName: profile?.full_name?.split(' ')[0]
       || user?.user_metadata?.full_name?.split(' ')[0]
       || user?.user_metadata?.name?.split(' ')[0]
@@ -222,7 +188,6 @@ export const AuthProvider = ({ children }) => {
 
     email: user?.email || '',
 
-    // Methods
     refreshProfile: async () => {
       if (user) {
         return await loadProfile(user);

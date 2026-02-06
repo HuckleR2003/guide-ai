@@ -7,11 +7,16 @@ export default function EarlyAccess() {
   const [billing, setBilling] = useState('yearly');
   const [submitted, setSubmitted] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [lang, setLang] = useState('en');
 
   useEffect(() => {
     const savedDark = localStorage.getItem('guideai-dark');
+    const savedLang = localStorage.getItem('guideai-lang');
     if (savedDark === 'true') setDarkMode(true);
+    if (savedLang) setLang(savedLang);
   }, []);
+
+  const isPl = lang === 'pl';
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -26,46 +31,35 @@ export default function EarlyAccess() {
   const plans = {
     pro: {
       name: 'Pro',
-      desc: 'For small teams & landlords',
+      desc: isPl ? 'Dla malych zespolow' : 'For small teams & landlords',
       monthlyPrice: 12,
       yearlyPrice: 9,
-      features: [
-        '10 devices',
-        '1,000 queries/mo',
-        'Dynamic QR codes',
-        'Basic analytics',
-        'Email support',
-      ],
+      features: isPl
+        ? ['10 urzadzen', '1 000 zapytan/msc', 'Dynamiczne kody QR', 'Podstawowe statystyki', 'Wsparcie email']
+        : ['10 devices', '1,000 queries/mo', 'Dynamic QR codes', 'Basic analytics', 'Email support'],
     },
     business: {
       name: 'Business',
-      desc: 'For agencies & enterprises',
+      desc: isPl ? 'Dla agencji i firm' : 'For agencies & enterprises',
       monthlyPrice: 39,
       yearlyPrice: 29,
-      features: [
-        'Unlimited devices',
-        '10,000 queries/mo',
-        'White-label branding',
-        'Advanced analytics',
-        'API access',
-        'Priority support',
-        'Custom integrations',
-      ],
+      features: isPl
+        ? ['Nieograniczone urzadzenia', '10 000 zapytan/msc', 'Wlasny branding', 'Zaawansowane statystyki', 'Dostep API', 'Priorytetowe wsparcie', 'Niestandardowe integracje']
+        : ['Unlimited devices', '10,000 queries/mo', 'White-label branding', 'Advanced analytics', 'API access', 'Priority support', 'Custom integrations'],
     },
   };
 
   const selectedPlan = plans[plan];
   const price = billing === 'yearly' ? selectedPlan.yearlyPrice : selectedPlan.monthlyPrice;
-  const savings = billing === 'yearly' ? Math.round((1 - selectedPlan.yearlyPrice / selectedPlan.monthlyPrice) * 100) : 0;
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
       {/* Nav */}
       <nav className={`sticky top-0 z-50 px-4 py-3 border-b backdrop-blur-sm ${darkMode ? 'bg-slate-900/90 border-slate-800' : 'bg-white/90 border-slate-200'}`}>
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <a href="/" className={`flex items-center gap-1.5 text-sm font-medium ${darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
+          <a href="#" className={`flex items-center gap-1.5 text-sm font-medium ${darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
             <ChevronLeft className="w-4 h-4" />
-            Back
+            {isPl ? 'Powrot' : 'Back'}
           </a>
           <div className="flex items-center gap-1.5">
             <div className={`w-4 h-4 grid grid-cols-4 grid-rows-4 gap-[1px] p-[2px] border rounded ${darkMode ? 'border-slate-600' : 'border-slate-300'}`}>
@@ -87,13 +81,13 @@ export default function EarlyAccess() {
         <div className="text-center mb-8">
           <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium mb-3 ${darkMode ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700'}`}>
             <Sparkles className="w-3 h-3" />
-            Early access · 40% off launch pricing
+            {isPl ? 'Wczesny dostep · 40% znizki na start' : 'Early access · 40% off launch pricing'}
           </div>
           <h1 className={`text-2xl md:text-3xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-            Turn manuals into conversations
+            {isPl ? 'Zamien instrukcje w rozmowy' : 'Turn manuals into conversations'}
           </h1>
           <p className={`text-sm max-w-md mx-auto ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            Your customers scan. AI answers. You sleep.
+            {isPl ? 'Twoi klienci skanuja. AI odpowiada. Ty odpoczywasz.' : 'Your customers scan. AI answers. You sleep.'}
           </p>
         </div>
 
@@ -102,9 +96,11 @@ export default function EarlyAccess() {
             <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-500 flex items-center justify-center">
               <Check className="w-6 h-6 text-white" />
             </div>
-            <h2 className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>You're in!</h2>
+            <h2 className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              {isPl ? 'Jestes na liscie!' : "You're in!"}
+            </h2>
             <p className={`text-sm ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-              Check your email for payment link and setup instructions.
+              {isPl ? 'Sprawdz email po link do platnosci i instrukcje.' : 'Check your email for payment link and setup instructions.'}
             </p>
           </div>
         ) : (
@@ -117,13 +113,13 @@ export default function EarlyAccess() {
                   onClick={() => setBilling('monthly')}
                   className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${billing === 'monthly' ? (darkMode ? 'bg-slate-700 text-white' : 'bg-slate-900 text-white') : (darkMode ? 'text-slate-400' : 'text-slate-600')}`}
                 >
-                  Monthly
+                  {isPl ? 'Miesiecznie' : 'Monthly'}
                 </button>
                 <button
                   onClick={() => setBilling('yearly')}
                   className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${billing === 'yearly' ? (darkMode ? 'bg-slate-700 text-white' : 'bg-slate-900 text-white') : (darkMode ? 'text-slate-400' : 'text-slate-600')}`}
                 >
-                  Yearly
+                  {isPl ? 'Rocznie' : 'Yearly'}
                   <span className={`text-xs px-1.5 py-0.5 rounded ${billing === 'yearly' ? 'bg-green-500 text-white' : (darkMode ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700')}`}>-25%</span>
                 </button>
               </div>
@@ -136,7 +132,7 @@ export default function EarlyAccess() {
                     onClick={() => setPlan(key)}
                     className={`p-4 rounded-xl text-left transition-all ${
                       plan === key
-                        ? (darkMode ? 'bg-blue-600 ring-2 ring-blue-500' : 'bg-blue-600 ring-2 ring-blue-500')
+                        ? 'bg-blue-600 ring-2 ring-blue-500'
                         : (darkMode ? 'bg-slate-800 hover:bg-slate-750 border border-slate-700' : 'bg-white hover:bg-slate-50 border border-slate-200')
                     }`}
                   >
@@ -153,7 +149,9 @@ export default function EarlyAccess() {
                       <span className={`text-2xl font-bold ${plan === key ? 'text-white' : (darkMode ? 'text-white' : 'text-slate-900')}`}>
                         ${billing === 'yearly' ? p.yearlyPrice : p.monthlyPrice}
                       </span>
-                      <span className={`text-sm ${plan === key ? 'text-blue-200' : (darkMode ? 'text-slate-500' : 'text-slate-500')}`}>/mo</span>
+                      <span className={`text-sm ${plan === key ? 'text-blue-200' : (darkMode ? 'text-slate-500' : 'text-slate-500')}`}>
+                        /{isPl ? 'msc' : 'mo'}
+                      </span>
                     </div>
                   </button>
                 ))}
@@ -162,7 +160,7 @@ export default function EarlyAccess() {
               {/* Features */}
               <div className={`p-4 rounded-xl ${darkMode ? 'bg-slate-800' : 'bg-white border border-slate-200'}`}>
                 <h4 className={`text-xs font-semibold uppercase tracking-wide mb-3 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                  What's included
+                  {isPl ? 'Co zawiera' : "What's included"}
                 </h4>
                 <ul className="grid grid-cols-2 gap-x-4 gap-y-2">
                   {selectedPlan.features.map((f, i) => (
@@ -178,21 +176,25 @@ export default function EarlyAccess() {
             {/* Right: Checkout */}
             <div className="md:col-span-2">
               <form onSubmit={handleSubmit} className={`p-5 rounded-xl sticky top-20 ${darkMode ? 'bg-slate-800' : 'bg-white border border-slate-200 shadow-lg'}`}>
-                <h3 className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Complete your order</h3>
+                <h3 className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {isPl ? 'Dokoncz zamowienie' : 'Complete your order'}
+                </h3>
 
                 {/* Summary */}
                 <div className={`p-3 rounded-lg mb-4 ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
                   <div className="flex justify-between items-center mb-1">
                     <span className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {selectedPlan.name} ({billing})
+                      {selectedPlan.name} ({isPl ? (billing === 'yearly' ? 'rocznie' : 'miesiecznie') : billing})
                     </span>
-                    <span className={`font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>${price}/mo</span>
+                    <span className={`font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>${price}/{isPl ? 'msc' : 'mo'}</span>
                   </div>
                   {billing === 'yearly' && (
                     <div className="flex justify-between items-center">
-                      <span className={`text-xs ${darkMode ? 'text-green-400' : 'text-green-600'}`}>Annual savings</span>
+                      <span className={`text-xs ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                        {isPl ? 'Roczna oszczednosc' : 'Annual savings'}
+                      </span>
                       <span className={`text-xs font-medium ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                        ${(selectedPlan.monthlyPrice - selectedPlan.yearlyPrice) * 12}/yr
+                        ${(selectedPlan.monthlyPrice - selectedPlan.yearlyPrice) * 12}/{isPl ? 'rok' : 'yr'}
                       </span>
                     </div>
                   )}
@@ -201,13 +203,13 @@ export default function EarlyAccess() {
                 {/* Email Input */}
                 <div className="mb-4">
                   <label className={`block text-xs font-medium mb-1.5 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                    Work email
+                    {isPl ? 'Email firmowy' : 'Work email'}
                   </label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
+                    placeholder={isPl ? 'ty@firma.com' : 'you@company.com'}
                     required
                     className={`w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       darkMode
@@ -222,12 +224,12 @@ export default function EarlyAccess() {
                   type="submit"
                   className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors"
                 >
-                  Get started
+                  {isPl ? 'Rozpocznij' : 'Get started'}
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
                 <p className={`text-xs text-center mt-3 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                  7-day free trial · Cancel anytime
+                  {isPl ? '7 dni za darmo · Mozesz anulowac w kazdej chwili' : '7-day free trial · Cancel anytime'}
                 </p>
               </form>
             </div>
@@ -239,36 +241,62 @@ export default function EarlyAccess() {
           <div className="flex flex-wrap items-center justify-center gap-8 text-center">
             <div>
               <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>500+</div>
-              <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>devices connected</div>
+              <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                {isPl ? 'podlaczonych urzadzen' : 'devices connected'}
+              </div>
             </div>
             <div className={`w-px h-8 ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`} />
             <div>
               <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>&lt;3s</div>
-              <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>avg response</div>
+              <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                {isPl ? 'sredni czas odpowiedzi' : 'avg response'}
+              </div>
             </div>
             <div className={`w-px h-8 ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`} />
             <div>
               <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>99.9%</div>
-              <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>uptime SLA</div>
+              <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                {isPl ? 'dostepnosc SLA' : 'uptime SLA'}
+              </div>
             </div>
           </div>
         </div>
 
         {/* FAQ */}
         <div className={`mt-8 p-5 rounded-xl ${darkMode ? 'bg-slate-800' : 'bg-white border border-slate-200'}`}>
-          <h3 className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Common questions</h3>
+          <h3 className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            {isPl ? 'Czeste pytania' : 'Common questions'}
+          </h3>
           <div className="space-y-4 text-sm">
             <div>
-              <h4 className={`font-medium mb-1 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>How does the free trial work?</h4>
-              <p className={darkMode ? 'text-slate-500' : 'text-slate-500'}>Full access for 7 days. No credit card required. If you don't subscribe, your account pauses automatically.</p>
+              <h4 className={`font-medium mb-1 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                {isPl ? 'Jak dziala darmowy okres probny?' : 'How does the free trial work?'}
+              </h4>
+              <p className={darkMode ? 'text-slate-500' : 'text-slate-500'}>
+                {isPl
+                  ? 'Pelny dostep przez 7 dni. Nie wymagamy karty kredytowej. Jesli nie subskrybujesz, konto zostanie automatycznie wstrzymane.'
+                  : "Full access for 7 days. No credit card required. If you don't subscribe, your account pauses automatically."}
+              </p>
             </div>
             <div>
-              <h4 className={`font-medium mb-1 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Can I change plans later?</h4>
-              <p className={darkMode ? 'text-slate-500' : 'text-slate-500'}>Yes. Upgrade or downgrade anytime from your dashboard. Changes apply immediately with prorated billing.</p>
+              <h4 className={`font-medium mb-1 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                {isPl ? 'Czy moge zmienic plan pozniej?' : 'Can I change plans later?'}
+              </h4>
+              <p className={darkMode ? 'text-slate-500' : 'text-slate-500'}>
+                {isPl
+                  ? 'Tak. Ulepsz lub zmniejsz plan w kazdej chwili z dashboardu. Zmiany obowiazuja natychmiast.'
+                  : 'Yes. Upgrade or downgrade anytime from your dashboard. Changes apply immediately with prorated billing.'}
+              </p>
             </div>
             <div>
-              <h4 className={`font-medium mb-1 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>What counts as a "query"?</h4>
-              <p className={darkMode ? 'text-slate-500' : 'text-slate-500'}>Each question a customer asks your AI assistant. Follow-up messages in the same session count as one query.</p>
+              <h4 className={`font-medium mb-1 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                {isPl ? 'Co liczy sie jako "zapytanie"?' : 'What counts as a "query"?'}
+              </h4>
+              <p className={darkMode ? 'text-slate-500' : 'text-slate-500'}>
+                {isPl
+                  ? 'Kazde pytanie, ktore klient zada asystentowi AI. Kolejne wiadomosci w tej samej sesji licza sie jako jedno zapytanie.'
+                  : 'Each question a customer asks your AI assistant. Follow-up messages in the same session count as one query.'}
+              </p>
             </div>
           </div>
         </div>
@@ -279,9 +307,9 @@ export default function EarlyAccess() {
         <div className="max-w-4xl mx-auto flex items-center justify-between text-xs">
           <span className={darkMode ? 'text-slate-500' : 'text-slate-400'}>© 2026 HCK_Labs</span>
           <div className={`flex gap-4 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-            <a href="#" className="hover:underline">Terms</a>
-            <a href="#" className="hover:underline">Privacy</a>
-            <a href="mailto:hcklabs.dev@gmail.com" className="hover:underline">Contact</a>
+            <a href="#/terms" className="hover:underline">{isPl ? 'Regulamin' : 'Terms'}</a>
+            <a href="#/privacy" className="hover:underline">{isPl ? 'Prywatnosc' : 'Privacy'}</a>
+            <a href="#/contact" className="hover:underline">{isPl ? 'Kontakt' : 'Contact'}</a>
           </div>
         </div>
       </footer>

@@ -6,7 +6,7 @@ import EarlyAccess from './EarlyAccess';
 import Dashboard from './Dashboard';
 import AuthModal from './AuthModal';
 import { AuthProvider, useAuth } from './AuthContext';
-import { saveDevice, canSaveMoreDevices, signOut, supabase } from './supabaseClient';
+import { saveDevice, canSaveMoreDevices, signOut } from './supabaseClient';
 import { ToastProvider, useToast } from './Toast';
 import { TermsOfService, PrivacyPolicy } from './LegalPages';
 import AboutPage from './AboutPage';
@@ -1817,9 +1817,8 @@ const UseCases = ({ onSelectDevice, demoRef }) => {
 // ═══════════════════════════════════════════════════════════════
 // PRICING COMPONENT
 // ═══════════════════════════════════════════════════════════════
-const Pricing = ({ onEarlyAccess }) => {
+const Pricing = () => {
   const { darkMode, lang, t } = useApp();
-  const { user, isAuthenticated } = useAuth();
 
   const proFeatures = lang === 'pl'
     ? ['10 urządzeń', 'Dynamiczne kody QR', 'Wsparcie email', '1,000 zapytań/msc', 'Podstawowa analityka']
@@ -1829,25 +1828,9 @@ const Pricing = ({ onEarlyAccess }) => {
     ? ['Wszystko z Pro', 'Nielimitowane urządzenia', 'Pełny branding', 'Zaawansowana analityka', 'Priorytetowe wsparcie 24/7']
     : ['Everything in Pro', 'Unlimited devices', 'Full Branding', 'Custom Analytics', 'Priority 24/7 Support'];
 
-  // Handle plan selection - redirect to Stripe or show auth modal
-  const handleSelectPlan = (plan) => {
-    if (!isAuthenticated) {
-      // Show auth modal first, then redirect after login
-      onEarlyAccess();
-      return;
-    }
-
-    // Redirect to Stripe checkout with user info
-    // Replace these with your actual Stripe payment links
-    const stripeLinks = {
-      pro: `https://buy.stripe.com/test_pro_link?client_reference_id=${user.id}&prefilled_email=${encodeURIComponent(user.email)}`,
-      business: `https://buy.stripe.com/test_business_link?client_reference_id=${user.id}&prefilled_email=${encodeURIComponent(user.email)}`,
-    };
-
-    const checkoutUrl = stripeLinks[plan];
-    if (checkoutUrl) {
-      window.open(checkoutUrl, '_blank');
-    }
+  // Handle plan selection - redirect to Early Access pricing page
+  const handleSelectPlan = () => {
+    window.location.hash = '#/early-access';
   };
 
   return (
@@ -1887,7 +1870,7 @@ const Pricing = ({ onEarlyAccess }) => {
               ))}
             </ul>
             <button
-              onClick={() => handleSelectPlan('pro')}
+              onClick={() => handleSelectPlan()}
               className={`w-full py-2.5 rounded-lg font-medium text-sm transition-all ${darkMode ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
             >
               {lang === 'pl' ? 'Wybierz Pro' : 'Choose Pro'}
@@ -1924,7 +1907,7 @@ const Pricing = ({ onEarlyAccess }) => {
               ))}
             </ul>
             <button
-              onClick={() => handleSelectPlan('business')}
+              onClick={() => handleSelectPlan()}
               className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-500 transition-all"
             >
               {lang === 'pl' ? 'Wybierz Business' : 'Choose Business'}
@@ -2359,8 +2342,16 @@ const UserMenu = ({ onOpenAuth, darkMode: propDarkMode, lang: propLang }) => {
   }, [loading]);
 
   const handleSignOut = async () => {
-    await signOut();
     setMenuOpen(false);
+    try {
+      await signOut();
+    } catch (err) {
+      console.error('Sign out error:', err);
+    }
+    // Clear cached auth data to prevent stale sessions
+    try {
+      localStorage.removeItem('guideai-auth-token');
+    } catch (e) {}
     window.location.hash = '';
     window.location.reload();
   };
@@ -2727,7 +2718,7 @@ function GuideAIInner() {
         <UseCases onSelectDevice={handleSelectDevice} demoRef={demoRef} />
         <HowItWorks />
         <div id="pricing-section">
-          <Pricing onEarlyAccess={() => setShowEarlyAccessModal(true)} />
+          <Pricing />
         </div>
         <FAQ />
         <EarlyAccessModal isOpen={showEarlyAccessModal} onClose={() => setShowEarlyAccessModal(false)} />

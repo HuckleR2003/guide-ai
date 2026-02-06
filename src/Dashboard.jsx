@@ -208,11 +208,9 @@ const DeviceCard = ({ device, darkMode, lang, t, onSelectQR, onOpenChat, onDelet
 export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkMode }) {
   const {
     user,
-    profile,
     planType,
     isPro,
     initialized,
-    loading: authLoading,
     displayName,
     avatarUrl,
     email
@@ -311,7 +309,15 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+    } catch (err) {
+      console.error('Sign out error:', err);
+    }
+    // Clear any cached auth data
+    try {
+      localStorage.removeItem('guideai-auth-token');
+    } catch (e) {}
     window.location.hash = '';
     window.location.reload();
   };
@@ -397,34 +403,9 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
     },
   ];
 
-  // Show loading screen while auth is initializing
-  if (!initialized || authLoading) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
-        <div className="text-center">
-          {/* Animated Logo */}
-          <div className="relative mb-6">
-            <div className={`w-20 h-20 mx-auto rounded-2xl flex items-center justify-center ${darkMode ? 'bg-slate-800' : 'bg-white shadow-lg'}`}>
-              <div className={`w-12 h-12 grid grid-cols-4 grid-rows-4 gap-[2px] p-[3px] border rounded-lg animate-pulse ${darkMode ? 'border-slate-600' : 'border-slate-300'}`}>
-                {[1,1,1,0,1,0,0,1,1,0,1,0,0,1,0,1].map((f, i) => (
-                  <div key={i} className={`${f ? (darkMode ? 'bg-blue-400' : 'bg-blue-500') : ''} rounded-[2px] transition-all`} style={{ animationDelay: `${i * 50}ms` }} />
-                ))}
-              </div>
-            </div>
-            {/* Spinning ring */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-24 h-24 border-2 border-transparent border-t-blue-500 rounded-full animate-spin" />
-            </div>
-          </div>
-          <p className={`text-lg font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-            Guide<span className="text-blue-500">AI</span>
-          </p>
-          <p className={`text-sm mt-2 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-            {lang === 'pl' ? 'Ładowanie...' : 'Loading...'}
-          </p>
-        </div>
-      </div>
-    );
+  // Show nothing while auth is not initialized (App.jsx handles the loading screen)
+  if (!initialized) {
+    return null;
   }
 
   return (
@@ -458,7 +439,8 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
 
       {/* Header */}
       <header className={`sticky top-0 z-40 backdrop-blur-xl border-b ${darkMode ? 'bg-slate-950/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+          {/* Left: Back button */}
           <button
             onClick={handleBack}
             className={`flex items-center gap-2 text-sm font-medium transition-colors ${darkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}
@@ -467,6 +449,7 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
             {t.back}
           </button>
 
+          {/* Center: Logo */}
           <div className="flex items-center gap-2">
             <div className={`w-6 h-6 grid grid-cols-4 grid-rows-4 gap-[1px] p-[2px] border rounded ${darkMode ? 'border-slate-700' : 'border-slate-300'}`}>
               {[1,1,1,0,1,0,0,1,1,0,1,0,0,1,0,1].map((f, i) => (
@@ -478,13 +461,37 @@ export default function Dashboard({ onOpenChat, lang = 'en', darkMode: propDarkM
             </span>
           </div>
 
-          <button
-            onClick={handleSignOut}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${darkMode ? 'text-slate-400 hover:text-red-400 hover:bg-slate-800' : 'text-slate-500 hover:text-red-500 hover:bg-slate-100'}`}
-          >
-            <LogOut className="w-4 h-4" />
-            {t.logout}
-          </button>
+          {/* Right: User greeting + sign out */}
+          <div className="flex items-center gap-3">
+            {/* User info */}
+            <div className="hidden sm:flex items-center gap-2.5">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-slate-700" />
+              ) : (
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${isPro ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white' : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white'}`}>
+                  {getUserDisplayName().charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="text-right">
+                <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {t.heyDear}!
+                </p>
+                <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {getUserDisplayName()}
+                </p>
+              </div>
+            </div>
+
+            {/* Sign out */}
+            <button
+              onClick={handleSignOut}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${darkMode ? 'text-slate-500 hover:text-red-400 hover:bg-slate-800' : 'text-slate-400 hover:text-red-500 hover:bg-slate-100'}`}
+              title={t.logout}
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">{t.logout}</span>
+            </button>
+          </div>
         </div>
       </header>
 
