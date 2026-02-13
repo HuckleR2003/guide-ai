@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { supabase, createOrGetProfile } from './supabaseClient';
+import { supabase, getProfile } from './supabaseClient';
 
 const AuthContext = createContext();
 
@@ -17,9 +17,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const mountedRef = useRef(true);
-  const profileLoadedRef = useRef(false);
 
-  // Fetch or create profile - never blocks auth flow
+  // Load profile from DB (trigger already created it on signup)
   const loadProfile = useCallback(async (currentUser) => {
     if (!currentUser || !mountedRef.current) {
       if (mountedRef.current) setProfile(null);
@@ -27,10 +26,10 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const { data: profileData, error } = await createOrGetProfile(currentUser);
-      if (error) {
-        console.warn('Profile load failed (RLS?):', error.message);
-        // Build a fallback profile from user_metadata so UI is never empty
+      const { data, error } = await getProfile(currentUser.id);
+
+      if (error || !data) {
+        // DB unreachable or RLS issue — use metadata as fallback
         const fallback = {
           id: currentUser.id,
           email: currentUser.email,
@@ -41,14 +40,11 @@ export const AuthProvider = ({ children }) => {
         if (mountedRef.current) setProfile(fallback);
         return fallback;
       }
-      if (mountedRef.current) {
-        setProfile(profileData);
-        profileLoadedRef.current = true;
-      }
-      return profileData;
+
+      if (mountedRef.current) setProfile(data);
+      return data;
     } catch (err) {
-      console.warn('Profile exception:', err.message);
-      // Fallback so UI doesn't break
+      console.warn('[Auth] Profile load error:', err.message);
       const fallback = {
         id: currentUser.id,
         email: currentUser.email,
@@ -63,7 +59,6 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     mountedRef.current = true;
-    profileLoadedRef.current = false;
 
     if (!supabase) {
       setLoading(false);
@@ -72,110 +67,42 @@ export const AuthProvider = ({ children }) => {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // FAST INITIAL CHECK - show cached user instantly
+    // SINGLE SOURCE OF TRUTH: onAuthStateChange
+    //
+    // Supabase v2 fires INITIAL_SESSION immediately when listener
+    // is registered, containing the current session (from storage
+    // or from URL hash tokens). This is the ONLY place we read
+    // auth state — no separate getSession() call needed.
     // ═══════════════════════════════════════════════════════════════
-    try {
-      const stored = localStorage.getItem('guideai-auth-token');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed?.user) {
-          setUser(parsed.user);
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mountedRef.current) return;
 
-    // ═══════════════════════════════════════════════════════════════
-    // MAIN SESSION VERIFICATION
-    // ═══════════════════════════════════════════════════════════════
-    const initAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('[Auth]', event, session?.user?.email || 'no user');
 
-        if (error) {
-          console.warn('getSession error:', error.message);
-          try {
-            const { data: refreshData } = await supabase.auth.refreshSession();
-            if (refreshData?.session && mountedRef.current) {
-              setUser(refreshData.session.user);
-              await loadProfile(refreshData.session.user);
-              return;
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+
+        if (currentUser) {
+          // Load profile WITHOUT blocking the initialized flag.
+          // Use setTimeout to avoid Supabase deadlock warning
+          // ("calling supabase.auth.getSession() inside onAuthStateChange")
+          setTimeout(() => {
+            if (mountedRef.current) {
+              loadProfile(currentUser);
             }
-          } catch (e) {
-            console.warn('refreshSession error:', e.message);
-          }
-        }
-
-        if (mountedRef.current) {
-          const currentUser = session?.user ?? null;
-          setUser(currentUser);
-          if (currentUser) {
-            await loadProfile(currentUser);
-          } else {
-            setProfile(null);
-          }
-        }
-      } catch (err) {
-        console.error('Auth init error:', err);
-        if (mountedRef.current) {
-          setUser(null);
+          }, 0);
+        } else {
           setProfile(null);
         }
-      } finally {
+
+        // Mark as initialized on ANY event (INITIAL_SESSION, SIGNED_IN, SIGNED_OUT, etc.)
         if (mountedRef.current) {
           setLoading(false);
           setInitialized(true);
         }
       }
-    };
-
-    initAuth();
-
-    // ═══════════════════════════════════════════════════════════════
-    // AUTH STATE LISTENER
-    // ═══════════════════════════════════════════════════════════════
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mountedRef.current) return;
-      console.log('[Auth]', event, session?.user?.email || 'no user');
-
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-
-      switch (event) {
-        case 'SIGNED_IN':
-        case 'TOKEN_REFRESHED':
-          if (currentUser) await loadProfile(currentUser);
-          if (mountedRef.current) {
-            setLoading(false);
-            setInitialized(true);
-          }
-          break;
-
-        case 'SIGNED_OUT':
-          if (mountedRef.current) {
-            setProfile(null);
-            setUser(null);
-            setLoading(false);
-          }
-          break;
-
-        case 'INITIAL_SESSION':
-          if (currentUser) await loadProfile(currentUser);
-          if (mountedRef.current) {
-            setLoading(false);
-            setInitialized(true);
-          }
-          break;
-
-        case 'USER_UPDATED':
-          if (currentUser) await loadProfile(currentUser);
-          break;
-
-        default:
-          break;
-      }
-    });
+    );
 
     return () => {
       mountedRef.current = false;
@@ -184,7 +111,7 @@ export const AuthProvider = ({ children }) => {
   }, [loadProfile]);
 
   // ═══════════════════════════════════════════════════════════════
-  // DERIVED VALUES - always safe, never null when user exists
+  // DERIVED VALUES
   // ═══════════════════════════════════════════════════════════════
   const displayName = profile?.full_name?.split(' ')[0]
     || user?.user_metadata?.full_name?.split(' ')[0]
