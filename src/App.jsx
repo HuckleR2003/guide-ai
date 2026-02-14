@@ -207,9 +207,10 @@ const useApp = () => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// GROQ API CONFIGURATION
+// CHAT API CONFIGURATION
 // ═══════════════════════════════════════════════════════════════
-const GROQ_API_KEY = "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";
+// API key is stored server-side in Vercel Environment Variables
+// Frontend calls /api/chat which proxies to Claude Haiku 3.5
 
 // ═══════════════════════════════════════════════════════════════
 // PDF TEXT EXTRACTION (with 5s timeout)
@@ -278,113 +279,33 @@ const extractTextFromPDF = async (file, onProgress) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// GROQ AI FUNCTION (with Token Optimization + STRICT GROUNDING)
+// AI CHAT FUNCTION (via Vercel serverless /api/chat)
+// API key is NEVER exposed to the browser
 // ═══════════════════════════════════════════════════════════════
-const askGroq = async (userQuestion, pdfContext, deviceType, deviceModel, chatHistory, isFirstMessage, demoResponses, lang = 'en') => {
-  // Fallback na lokalne odpowiedzi jeśli brak klucza API
-  if (!GROQ_API_KEY) {
-    const lowerInput = userQuestion.toLowerCase();
-    for (const [key, value] of Object.entries(demoResponses)) {
-      if (key !== 'default' && lowerInput.includes(key)) {
-        return value;
-      }
-    }
-    return demoResponses.default;
-  }
-
+const askAI = async (userQuestion, pdfContext, deviceType, deviceModel, chatHistory, isFirstMessage, demoResponses, lang = 'en') => {
   try {
-    // TOKEN OPTIMIZATION: Limit PDF context to 10k chars (~2500 tokens)
-    const limitedPdfContext = pdfContext ? pdfContext.slice(0, 10000) : '';
-
-    // STRICT GROUNDING SYSTEM PROMPT
-    const systemPrompt = lang === 'pl'
-      ? `Jesteś asystentem technicznym GuideAI dla urządzenia: ${deviceType} ${deviceModel}.
-
-## ZASADY STRICT GROUNDING (BEZWZGLĘDNE):
-
-1. **TYLKO OFICJALNA INSTRUKCJA**: Odpowiadaj WYŁĄCZNIE na podstawie dostarczonej instrukcji PDF. Nie używaj zewnętrznej wiedzy.
-
-2. **WERYFIKACJA TWIERDZEŃ**: Jeśli użytkownik twierdzi coś o urządzeniu (np. "ta pralka działa na węgiel"), SPRAWDŹ to w instrukcji:
-   - Jeśli NIE MA takiej informacji w instrukcji → odpowiedz: "Nie mogę znaleźć informacji o [temat] w oficjalnej instrukcji tego urządzenia."
-   - NIGDY nie potwierdzaj fałszywych twierdzeń użytkownika.
-
-3. **BRAK INFORMACJI**: Gdy nie znajdziesz odpowiedzi w instrukcji:
-   - PL: "Nie mogę znaleźć informacji na ten temat w oficjalnej instrukcji ${deviceType} ${deviceModel}."
-
-4. **FORMAT**: Odpowiadaj krótko (2-4 zdania), w punktach gdy to pomocne. Cytuj numery stron/sekcji gdy to możliwe.
-
-5. **ODMOWA**: Odmawiaj odpowiedzi na pytania nie związane z urządzeniem lub wykraczające poza instrukcję.`
-
-      : `You are a technical assistant for GuideAI, supporting device: ${deviceType} ${deviceModel}.
-
-## STRICT GROUNDING RULES (MANDATORY):
-
-1. **OFFICIAL MANUAL ONLY**: Answer EXCLUSIVELY based on the provided PDF manual. Do NOT use external knowledge.
-
-2. **VERIFY USER CLAIMS**: If user claims something about the device (e.g., "this washer runs on coal"), CHECK the manual:
-   - If NOT FOUND in manual → respond: "I cannot find any information about [topic] in the official manual for this device."
-   - NEVER confirm user's false claims.
-
-3. **NO INFORMATION**: When you cannot find an answer in the manual:
-   - EN: "I cannot find information about this topic in the official ${deviceType} ${deviceModel} manual."
-
-4. **FORMAT**: Keep answers concise (2-4 sentences), use bullet points when helpful. Cite page numbers/sections when possible.
-
-5. **DECLINE**: Refuse to answer questions unrelated to the device or beyond the manual scope.`;
-
-    // Build messages array
-    const messages = [{ role: 'system', content: systemPrompt }];
-
-    // FIRST MESSAGE: Include PDF context with grounding instructions
-    if (isFirstMessage && limitedPdfContext.length > 100) {
-      const groundingPrefix = lang === 'pl'
-        ? `[OFICJALNA INSTRUKCJA URZĄDZENIA - To jest JEDYNE źródło prawdy. Odpowiadaj TYLKO na podstawie tych informacji.]\n\n`
-        : `[OFFICIAL DEVICE MANUAL - This is the ONLY source of truth. Answer ONLY based on this information.]\n\n`;
-
-      messages.push({
-        role: 'user',
-        content: `${groundingPrefix}${limitedPdfContext}\n\n---\n\n[USER QUESTION]: ${userQuestion}`
-      });
-    } else {
-      // SUBSEQUENT MESSAGES: Only chat history + new question (NO PDF re-send)
-      // Add last 4 messages from history for context (token efficient)
-      const recentHistory = chatHistory.slice(-4);
-      recentHistory.forEach(msg => {
-        if (msg.type === 'user') {
-          messages.push({ role: 'user', content: msg.text });
-        } else if (msg.type === 'assistant') {
-          messages.push({ role: 'assistant', content: msg.text });
-        }
-      });
-      messages.push({ role: 'user', content: userQuestion });
-    }
-
-    console.log(`Groq API call (first: ${isFirstMessage}, messages: ${messages.length})`);
-
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch('/api/chat', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
-        messages,
-        temperature: 0.3,
-        max_tokens: 400, // Reduced for cost
+        question: userQuestion,
+        pdfContext: isFirstMessage ? pdfContext : null, // Only send PDF on first message
+        deviceType,
+        deviceModel,
+        history: isFirstMessage ? [] : chatHistory.filter(m => m.type === 'user' || m.type === 'assistant').slice(-4),
+        lang,
       }),
     });
 
-    const data = await response.json();
-
-    if (data.error) {
-      console.error('Groq API error:', data.error);
+    if (!response.ok) {
+      console.error('Chat API error:', response.status);
       return demoResponses.default;
     }
 
-    return data.choices?.[0]?.message?.content || demoResponses.default;
+    const data = await response.json();
+    return data.reply || demoResponses.default;
   } catch (error) {
-    console.error('Groq API error:', error);
+    console.error('Chat API error:', error);
     return demoResponses.default;
   }
 };
@@ -1305,7 +1226,7 @@ const InteractiveDemo = React.forwardRef(({
       // TOKEN OPTIMIZATION: Pass chat history and first message flag
       const isFirst = !isFirstMessageSent;
 
-      const response = await askGroq(
+      const response = await askAI(
         userMessage,
         pdfContext,
         deviceType,
@@ -1457,11 +1378,9 @@ const InteractiveDemo = React.forwardRef(({
             <div className="w-3 h-3 rounded-full bg-yellow-400" />
             <div className="w-3 h-3 rounded-full bg-green-400" />
             <span className={`ml-4 text-sm font-medium ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>GuideAI Demo</span>
-            {GROQ_API_KEY && (
-              <span className="ml-auto text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                AI Connected
-              </span>
-            )}
+            <span className="ml-auto text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+              AI Connected
+            </span>
             {pdfContext && (
               <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                 PDF Loaded
