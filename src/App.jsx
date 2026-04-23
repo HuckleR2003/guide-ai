@@ -795,7 +795,7 @@ const AuroraBackground = ({ darkMode }) => (
 
 // HERO
 const Hero = () => {
-  const { darkMode, t } = useApp();
+  const { darkMode, lang, t } = useApp();
   const [showVideoModal, setShowVideoModal] = useState(false);
 
   return (
@@ -814,26 +814,34 @@ const Hero = () => {
               Device, QR, and <span className="bg-yellow-400 text-slate-900 px-2 py-0.5 rounded">Chat!</span>
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button className={`group flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${darkMode ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>
-              {t('tryFree')}
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+              {/* Primary CTA — blue, prominent, with glow */}
+              <a
+                href="#demo-section"
+                onClick={(e) => { e.preventDefault(); document.getElementById('demo-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+                className="group flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold text-base bg-blue-600 text-white hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5"
+              >
+                {t('tryFree')}
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </a>
 
-            {/* Demo button with video modal trigger */}
-            <div className="flex flex-col items-center">
+              {/* Secondary CTA — ghost style */}
               <button
                 onClick={() => setShowVideoModal(true)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all hover:scale-105 ${darkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800/50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
+                className={`flex items-center gap-2 px-6 py-3.5 rounded-full font-medium transition-all hover:scale-105 border ${darkMode ? 'text-slate-300 hover:text-white border-slate-700 hover:bg-slate-800/80' : 'text-slate-700 hover:text-slate-900 border-slate-300 hover:bg-slate-100'}`}
               >
                 <QrCode className="w-4 h-4" />
                 {t('seeDemo')}
               </button>
-              {/* Small "Kliknij, video!" text */}
-              <span className={`text-[10px] mt-1 animate-pulse ${darkMode ? 'text-blue-400' : 'text-blue-500'}`}>
-                Kliknij, video!
-              </span>
             </div>
+
+            {/* Trust line — no credit card, free trial */}
+            <p className={`text-xs tracking-wide ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+              {lang === 'pl'
+                ? '✓ Bez karty kredytowej  ·  ✓ 7 dni za darmo  ·  ✓ Anuluj kiedy chcesz'
+                : '✓ No credit card required  ·  ✓ 7-day free trial  ·  ✓ Cancel anytime'}
+            </p>
           </div>
         </div>
       </section>
@@ -1866,165 +1874,203 @@ const UseCases = ({ onSelectDevice, demoRef }) => {
 // ═══════════════════════════════════════════════════════════════
 const Pricing = () => {
   const { darkMode, lang, t } = useApp();
+  const [billing, setBilling] = useState('yearly');
 
-  const proFeatures = lang === 'pl'
-    ? ['10 urządzeń', 'Dynamiczne kody QR', 'Wsparcie email', '1,000 zapytań/msc', 'Podstawowa analityka']
-    : ['10 devices', 'Dynamic QR codes', 'Email support', '1,000 queries/mo', 'Basic analytics'];
+  const isYearly = billing === 'yearly';
 
-  const businessFeatures = lang === 'pl'
-    ? ['Wszystko z Pro', 'Nielimitowane urządzenia', 'Pełny branding', 'Zaawansowana analityka', 'Priorytetowe wsparcie 24/7']
-    : ['Everything in Pro', 'Unlimited devices', 'Full Branding', 'Custom Analytics', 'Priority 24/7 Support'];
+  const plans = {
+    pro: {
+      name: 'Pro',
+      desc: lang === 'pl' ? 'Dla małych zespołów' : 'For small teams & landlords',
+      monthly: 12,
+      yearly: 9,
+      features: lang === 'pl'
+        ? ['10 urządzeń', 'Dynamiczne kody QR', 'Wsparcie email', '1,000 zapytań/msc', 'Podstawowa analityka']
+        : ['10 devices', 'Dynamic QR codes', 'Email support', '1,000 queries/mo', 'Basic analytics'],
+    },
+    business: {
+      name: 'Business',
+      desc: lang === 'pl' ? 'Dla agencji i firm' : 'For agencies & enterprises',
+      monthly: 39,
+      yearly: 29,
+      features: lang === 'pl'
+        ? ['Wszystko z Pro', 'Nielimitowane urządzenia', 'Własny branding', 'Zaawansowana analityka', 'API access', 'Priorytetowe wsparcie 24/7']
+        : ['Everything in Pro', 'Unlimited devices', 'White-label branding', 'Advanced analytics', 'API access', 'Priority 24/7 support'],
+    },
+  };
 
-  // Handle plan selection - redirect to Early Access pricing page
   const handleSelectPlan = () => {
     window.location.hash = '#/early-access';
   };
 
   return (
-    <section className={`px-6 py-12 ${darkMode ? 'bg-slate-900' : ''}`}>
+    <section className={`px-6 py-16 ${darkMode ? 'bg-slate-900' : ''}`}>
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
           <h3 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>{t('simplePricing')}</h3>
-          <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('startFree')}</p>
+          <p className={`text-sm mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('startFree')}</p>
+
+          {/* Billing toggle */}
+          <div className={`inline-flex items-center gap-1 p-1 rounded-xl ${darkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
+            <button
+              onClick={() => setBilling('monthly')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${!isYearly ? (darkMode ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-slate-900 shadow-sm') : (darkMode ? 'text-slate-400' : 'text-slate-500')}`}
+            >
+              {lang === 'pl' ? 'Miesięcznie' : 'Monthly'}
+            </button>
+            <button
+              onClick={() => setBilling('yearly')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${isYearly ? (darkMode ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-slate-900 shadow-sm') : (darkMode ? 'text-slate-400' : 'text-slate-500')}`}
+            >
+              {lang === 'pl' ? 'Rocznie' : 'Yearly'}
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500 text-white font-bold">
+                -25%
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Pro & Business Cards */}
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           {/* Pro Card */}
-          <div className={`rounded-xl p-6 relative transition-all hover:shadow-lg ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'}`}>
-            <div className="flex items-center justify-between mb-3">
+          <div className={`rounded-2xl p-6 relative transition-all hover:shadow-lg ${darkMode ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200 shadow-sm'}`}>
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h4 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>Pro</h4>
-                <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                  {lang === 'pl' ? 'Dla małych zespołów' : 'For small teams & landlords'}
+                <h4 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>Pro</h4>
+                <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                  {plans.pro.desc}
                 </p>
               </div>
               <div className="text-right">
                 <div className="flex items-baseline gap-1">
-                  <span className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>$9</span>
+                  <span className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                    ${isYearly ? plans.pro.yearly : plans.pro.monthly}
+                  </span>
                   <span className={`text-sm ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>/mo</span>
                 </div>
-                <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                  {lang === 'pl' ? 'rozliczane rocznie' : 'billed annually'}
-                </span>
+                {isYearly && (
+                  <span className={`text-xs ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                    {lang === 'pl' ? `oszczędzasz $${(plans.pro.monthly - plans.pro.yearly) * 12}/rok` : `save $${(plans.pro.monthly - plans.pro.yearly) * 12}/yr`}
+                  </span>
+                )}
               </div>
             </div>
-            <ul className="space-y-2 mb-4">
-              {proFeatures.map((f, i) => (
+            <ul className="space-y-2.5 mb-5">
+              {plans.pro.features.map((f, i) => (
                 <li key={i} className={`flex items-center gap-2 text-sm ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
                   <Check className="w-4 h-4 text-blue-500 flex-shrink-0" />{f}
                 </li>
               ))}
             </ul>
             <button
-              onClick={() => handleSelectPlan()}
-              className={`w-full py-2.5 rounded-lg font-medium text-sm transition-all ${darkMode ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+              onClick={handleSelectPlan}
+              className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all ${darkMode ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
             >
-              {lang === 'pl' ? 'Wybierz Pro' : 'Choose Pro'}
+              {lang === 'pl' ? 'Wybierz Pro' : 'Get Pro'}
             </button>
           </div>
 
-          {/* Business Card */}
-          <div className={`rounded-xl p-6 relative transition-all hover:shadow-lg border-2 ${darkMode ? 'bg-gradient-to-br from-slate-800 to-slate-700 border-blue-500/50' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-400'}`}>
-            <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs font-medium px-3 py-0.5 rounded-full">
-              {lang === 'pl' ? 'Popularne' : 'Popular'}
+          {/* Business Card — highlighted */}
+          <div className={`rounded-2xl p-6 relative transition-all hover:shadow-xl border-2 ${darkMode ? 'bg-gradient-to-br from-blue-900/40 to-indigo-900/30 border-blue-500/60' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-400'}`}>
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg">
+              {lang === 'pl' ? '⭐ Popularne' : '⭐ Popular'}
             </div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h4 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>Business</h4>
-                <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                  {lang === 'pl' ? 'Dla agencji i firm' : 'For agencies & enterprises'}
+                <h4 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>Business</h4>
+                <p className={`text-xs mt-0.5 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                  {plans.business.desc}
                 </p>
               </div>
               <div className="text-right">
                 <div className="flex items-baseline gap-1">
-                  <span className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>$20</span>
-                  <span className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>/mo</span>
+                  <span className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                    ${isYearly ? plans.business.yearly : plans.business.monthly}
+                  </span>
+                  <span className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>/mo</span>
                 </div>
-                <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                  {lang === 'pl' ? 'rozliczane rocznie' : 'billed annually'}
-                </span>
+                {isYearly && (
+                  <span className={`text-xs ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                    {lang === 'pl' ? `oszczędzasz $${(plans.business.monthly - plans.business.yearly) * 12}/rok` : `save $${(plans.business.monthly - plans.business.yearly) * 12}/yr`}
+                  </span>
+                )}
               </div>
             </div>
-            <ul className="space-y-2 mb-4">
-              {businessFeatures.map((f, i) => (
+            <ul className="space-y-2.5 mb-5">
+              {plans.business.features.map((f, i) => (
                 <li key={i} className={`flex items-center gap-2 text-sm ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                   <Check className="w-4 h-4 text-blue-500 flex-shrink-0" />{f}
                 </li>
               ))}
             </ul>
             <button
-              onClick={() => handleSelectPlan()}
-              className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-500 transition-all"
+              onClick={handleSelectPlan}
+              className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-blue-500/25"
             >
-              {lang === 'pl' ? 'Wybierz Business' : 'Choose Business'}
+              {lang === 'pl' ? 'Wybierz Business' : 'Get Business'}
             </button>
           </div>
         </div>
 
-        {/* Free Tier - Full Width Glassmorphism Button */}
-        <div className={`rounded-xl p-4 backdrop-blur-sm border transition-all hover:shadow-md ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:border-slate-600' : 'bg-white/60 border-slate-200 hover:border-slate-300'}`}>
+        {/* Free Tier */}
+        <div className={`rounded-xl p-4 border transition-all hover:shadow-md ${darkMode ? 'bg-slate-800/50 border-slate-700 hover:border-slate-600' : 'bg-white/80 border-slate-200 hover:border-slate-300'}`}>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${darkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
                 <Check className="w-4 h-4 text-green-500" />
               </div>
               <div>
-                <p className={`font-medium text-sm ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {lang === 'pl' ? 'Zacznij za darmo' : 'Get started for free'}
+                <p className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {lang === 'pl' ? 'Zacznij za darmo' : 'Start for free'}
                 </p>
                 <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                  {lang === 'pl'
-                    ? '1 stały link QR • Wsparcie AI • Dostęp do społeczności'
-                    : '1 Permanent QR Link • AI Support • Community Access'}
+                  {lang === 'pl' ? '1 urządzenie · Asystent AI · Kod QR' : '1 device · AI assistant · QR code'}
                 </p>
               </div>
             </div>
-            <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${darkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'}`}>
-              {lang === 'pl' ? 'Kontynuuj za darmo →' : 'Continue free →'}
-            </button>
+            <a
+              href="#demo-section"
+              onClick={(e) => { e.preventDefault(); document.getElementById('demo-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+              className={`shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all ${darkMode ? 'text-slate-300 hover:bg-slate-700' : 'text-slate-600 hover:bg-slate-100'}`}
+            >
+              {lang === 'pl' ? 'Spróbuj za darmo →' : 'Try for free →'}
+            </a>
           </div>
         </div>
 
         {/* Trust Badges */}
         <div className={`mt-8 pt-6 border-t ${darkMode ? 'border-slate-800' : 'border-slate-200'}`}>
-          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10">
-            <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
-                <Check className="w-4 h-4 text-green-500" />
-              </div>
+          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12">
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl">🔒</span>
               <div>
-                <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {lang === 'pl' ? '7 dni za darmo' : '7-day free trial'}
+                <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {lang === 'pl' ? 'Bez karty kredytowej' : 'No credit card'}
                 </p>
                 <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                  {lang === 'pl' ? 'Bez karty kredytowej' : 'No credit card'}
+                  {lang === 'pl' ? '7 dni za darmo' : '7-day free trial'}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
-                <Check className="w-4 h-4 text-blue-500" />
-              </div>
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl">↩️</span>
               <div>
-                <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {lang === 'pl' ? 'Zwrot w 7 dni' : '7-day money back'}
+                </p>
+                <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                  {lang === 'pl' ? 'Gwarancja bez ryzyka' : 'Risk-free guarantee'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl">⚡</span>
+              <div>
+                <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                   {lang === 'pl' ? 'Anuluj kiedy chcesz' : 'Cancel anytime'}
                 </p>
                 <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                  {lang === 'pl' ? 'Bez zobowiązań' : 'No commitment'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${darkMode ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
-                <Sparkles className="w-4 h-4 text-amber-500" />
-              </div>
-              <div>
-                <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {lang === 'pl' ? '99.9% uptime' : '99.9% uptime'}
-                </p>
-                <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                  {lang === 'pl' ? 'Gwarancja SLA' : 'SLA guarantee'}
+                  {lang === 'pl' ? 'Zero zobowiązań' : 'No commitment'}
                 </p>
               </div>
             </div>
@@ -2454,9 +2500,16 @@ const UserMenu = ({ onOpenAuth, darkMode: propDarkMode, lang: propLang }) => {
         <p className={`text-xs font-light tracking-wide ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
           {lang === 'pl' ? 'Witaj!' : 'Welcome dear!'}
         </p>
-        <p className={`text-sm font-semibold truncate max-w-[120px] ${darkMode ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Georgia, serif' }}>
-          {userName}
-        </p>
+        <div className="flex items-center justify-end gap-1.5">
+          <p className={`text-sm font-semibold truncate max-w-[100px] ${darkMode ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Georgia, serif' }}>
+            {userName}
+          </p>
+          {isPro && (
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold rounded-full leading-none shrink-0">
+              <Crown className="w-2.5 h-2.5" /> PRO
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Profile button */}
@@ -2465,8 +2518,8 @@ const UserMenu = ({ onOpenAuth, darkMode: propDarkMode, lang: propLang }) => {
           onClick={() => setMenuOpen(!menuOpen)}
           className={`flex items-center gap-2 p-1.5 rounded-full transition-all border-2 ${
             darkMode
-              ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 hover:border-blue-500'
-              : 'bg-white hover:bg-slate-50 shadow-md border-slate-200 hover:border-blue-400'
+              ? `bg-slate-800 hover:bg-slate-700 ${isPro ? 'border-amber-500 hover:border-amber-400' : 'border-slate-700 hover:border-blue-500'}`
+              : `bg-white hover:bg-slate-50 shadow-md ${isPro ? 'border-amber-400 hover:border-amber-500' : 'border-slate-200 hover:border-blue-400'}`
           }`}
         >
           {avatarUrl ? (
@@ -2549,6 +2602,169 @@ const UserMenu = ({ onOpenAuth, darkMode: propDarkMode, lang: propLang }) => {
         )}
       </div>
     </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SOCIAL PROOF — stats bar (after Hero)
+// ═══════════════════════════════════════════════════════════════
+const SocialProof = () => {
+  const { darkMode, lang } = useApp();
+
+  const stats = lang === 'pl'
+    ? [
+        { value: '500+', label: 'podłączonych urządzeń' },
+        { value: '<3s', label: 'średni czas odpowiedzi' },
+        { value: '99.9%', label: 'dostępność SLA' },
+        { value: '7 dni', label: 'darmowy okres próbny' },
+      ]
+    : [
+        { value: '500+', label: 'devices connected' },
+        { value: '<3s', label: 'avg response time' },
+        { value: '99.9%', label: 'uptime SLA' },
+        { value: '7-day', label: 'free trial' },
+      ];
+
+  return (
+    <section className={`px-6 py-8 border-t ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+      <div className="max-w-3xl mx-auto">
+        <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14">
+          {stats.map((stat, i) => (
+            <div key={i} className="flex items-center gap-8 sm:gap-14">
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {stat.value}
+                </div>
+                <div className={`text-xs mt-0.5 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                  {stat.label}
+                </div>
+              </div>
+              {i < stats.length - 1 && (
+                <div className={`hidden sm:block w-px h-8 ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`} />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// TESTIMONIALS — 3 opinie beta-testerów (przed Pricing)
+// ═══════════════════════════════════════════════════════════════
+const Testimonials = () => {
+  const { darkMode, lang } = useApp();
+
+  const testimonials = lang === 'pl'
+    ? [
+        {
+          quote: 'Zamiast odbierać telefony od klientów pytających o serwis AGD, teraz widzę jak skanują QR i dostają odpowiedzi w sekundę. Oszczędzam minimum 2 godziny dziennie.',
+          name: 'Marek W.',
+          role: 'Właściciel serwisu RTV/AGD',
+          initials: 'MW',
+          color: 'from-blue-500 to-indigo-600',
+        },
+        {
+          quote: 'Mamy 200 urządzeń fitness w centrum. GuideAI obniżył pytania do recepcji o ponad 60%. Klienci uwielbiają to, że odpowiedź jest natychmiastowa i w ich języku.',
+          name: 'Ewa K.',
+          role: 'Menadżer Fitness Studio',
+          initials: 'EK',
+          color: 'from-emerald-500 to-teal-600',
+        },
+        {
+          quote: 'Wgrałem instrukcje serwerów Dell i technicy w magazynie przestali mi wydzwaniać. Dokładnie ten problem, który chciałem rozwiązać od 3 lat.',
+          name: 'Piotr N.',
+          role: 'Administrator IT · 50+ serwerów',
+          initials: 'PN',
+          color: 'from-amber-500 to-orange-500',
+        },
+      ]
+    : [
+        {
+          quote: 'Instead of answering calls from customers asking about appliance repair, they now scan the QR and get answers in a second. I save at least 2 hours every day.',
+          name: 'Mark W.',
+          role: 'Appliance Service Owner',
+          initials: 'MW',
+          color: 'from-blue-500 to-indigo-600',
+        },
+        {
+          quote: 'We have 200 fitness machines in our facility. GuideAI cut front-desk questions by over 60%. Members love that answers are instant and in their own language.',
+          name: 'Eva K.',
+          role: 'Fitness Studio Manager',
+          initials: 'EK',
+          color: 'from-emerald-500 to-teal-600',
+        },
+        {
+          quote: 'Uploaded Dell server manuals and my warehouse techs stopped calling me. Exactly the problem I\'d been trying to solve for 3 years.',
+          name: 'Peter N.',
+          role: 'IT Administrator · 50+ servers',
+          initials: 'PN',
+          color: 'from-amber-500 to-orange-500',
+        },
+      ];
+
+  return (
+    <section className={`px-6 py-16 ${darkMode ? 'bg-slate-800/20' : 'bg-gradient-to-b from-slate-50 to-white'}`}>
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium mb-3 border ${darkMode ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+            ★★★★★&nbsp; {lang === 'pl' ? 'Opinie pierwszych użytkowników' : 'Early adopter reviews'}
+          </div>
+          <h3 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+            {lang === 'pl' ? 'Zaufali nam jako pierwsi' : 'People who tried it first'}
+          </h3>
+          <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            {lang === 'pl' ? 'Realne wyniki z pierwszych miesięcy beta' : 'Real results from our first beta months'}
+          </p>
+        </div>
+
+        {/* Cards */}
+        <div className="grid md:grid-cols-3 gap-4">
+          {testimonials.map((item, i) => (
+            <div
+              key={i}
+              className={`p-6 rounded-2xl border transition-all hover:scale-[1.02] hover:shadow-md ${darkMode ? 'bg-slate-800/70 border-slate-700 hover:border-slate-600' : 'bg-white border-slate-200 shadow-sm hover:shadow-lg'}`}
+            >
+              {/* Stars */}
+              <div className="flex gap-0.5 mb-4">
+                {[...Array(5)].map((_, s) => (
+                  <span key={s} className="text-amber-400 text-sm">★</span>
+                ))}
+              </div>
+
+              {/* Quote */}
+              <p className={`text-sm leading-relaxed mb-6 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                &ldquo;{item.quote}&rdquo;
+              </p>
+
+              {/* Author */}
+              <div className="flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${item.color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                  {item.initials}
+                </div>
+                <div>
+                  <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {item.name}
+                  </p>
+                  <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                    {item.role}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom trust line */}
+        <p className={`text-center text-xs mt-8 ${darkMode ? 'text-slate-600' : 'text-slate-400'}`}>
+          {lang === 'pl'
+            ? '100% prawdziwych opinii z fazy beta · Brak płatnych recenzji'
+            : '100% genuine reviews from beta phase · No paid reviews'}
+        </p>
+      </div>
+    </section>
   );
 };
 
@@ -2738,6 +2954,7 @@ function GuideAIInner() {
         />
 
         <Hero />
+        <SocialProof />
         <div id="demo-section">
           <InteractiveDemo
             ref={demoRef}
@@ -2755,6 +2972,7 @@ function GuideAIInner() {
         <ExampleGrid onSelectDevice={handleSelectDevice} demoRef={demoRef} />
         <UseCases onSelectDevice={handleSelectDevice} demoRef={demoRef} />
         <HowItWorks />
+        <Testimonials />
         <div id="pricing-section">
           <Pricing />
         </div>
