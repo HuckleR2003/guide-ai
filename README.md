@@ -86,7 +86,7 @@ Use GuideAI for equipment that customers or staff need to operate correctly:
 
 ---
 
-## How it works
+## How it works!
 
 ### 1. Upload a PDF manual
 
